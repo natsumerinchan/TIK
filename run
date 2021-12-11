@@ -1,0 +1,693 @@
+#!/bin/bash
+Yeliqin() { echo -e "[36;5m$*[0m"; }
+content=$(curl -s https://v1.jinrishici.com/all.json)
+  shiju=$(echo $content| cut -d \" -f 4 )
+  from=$(echo $content| cut -d \" -f 8)
+  author=$(echo $content| cut -d \" -f 12)
+  ver=5.1
+  cloud=$(curl -s "https://gitee.com/xiaobai2333/CYToolkitAccount/blob/master/version.md" | grep -w $ver | sed -n '2p' | cut -c 1-3)
+  clou=$(echo $cloud | cut -c 1-3)
+  if [[ $clou != $ver ]]; then
+  version="有更新"
+  mains=1
+  else
+  version="无更新"
+  mains=0
+  fi
+dyunboot=1
+LOCALDIR="$(cd $(dirname $0); pwd)"
+binner=$LOCALDIR/bin
+HOST=$(uname)
+platform=$(uname -m)
+AIK="$binner/AIK"
+export LD_LIBRARY_PATH=$binner/$HOST/$platform/lib64
+export ebinner=$binner/$HOST/$platform
+export PS1="[\e[32;1m\u@\h \W]\\$" 
+source $binner/settings
+source $binner/function2
+if [ "$platform" = "aarch64" ];then
+command+=" -b /sdcard"
+Sourcedir=/sdcard/$mydir
+else
+Sourcedir=$LOCALDIR
+fi
+if [[ -f "$binner/sta" ]]; then
+	new=0
+else
+	new=1
+fi
+
+# 检查是否需要安装环境
+function checkpath()
+{
+clear
+cd $LOCALDIR
+if [[ -f "$binner/depment" ]]; then
+promenu
+else
+clear
+echo -n 您&&sleep 0.2&&echo -n 好&&sleep 0.2&&echo -n ，&&sleep 0.2&&echo -n 欢&&sleep 0.2&&echo -n 迎&&sleep 0.2&&echo -n 使&&sleep 0.2&&echo -n 用&&sleep 0.2&&echo -n  TIK &&sleep 0.2&&echo 全能工具箱！&&sleep 0.2
+echo -n 将&&sleep 0.2&&echo -n 通&&sleep 0.2&&echo -n 过&&sleep 0.2&&echo -n 几&&sleep 0.2&&echo -n 个&&sleep 0.2&&echo -n 步&&sleep 0.2&&echo -n 骤&&sleep 0.2&&echo -n ，&&sleep 0.2&&echo -n 帮&&sleep 0.2&&echo -n 您&&sleep 0.2&&echo -n 配&&sleep 0.2&&echo -n 置&&sleep 0.2&&echo -n 好&&sleep 0.2&&echo -n 工&&sleep 0.2&&echo 具&&sleep 0.2
+PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
+clear
+echo -e "\033[34m $(cat $binner/banner) \033[0m"
+#if [[ $(which id) ]]; then
+#if [[ $(id -u) = "0" ]]; then
+#userid="root"
+#fi
+#elif [[ $EUID = "0" ]]; then
+#userid="root"
+#fi
+if [[ $userid = "root" ]]; then
+	clear
+	echo "工具不允许在root环境下运行"
+	sleep $sleeptime
+	exit
+fi
+Yeliqin "开始配置环境"
+sleep $sleeptime
+clear
+echo "更换国内清华源 ..."
+if [ "$platform" = "aarch64" ];then
+	mv /etc/apt/sources.list /etc/apt/sources.list.bak
+	echo -e "deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ focal main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ focal-updates main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ focal-backports main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ focal-security main restricted universe multiverse" >> /etc/apt/sources.list
+else
+	sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
+	sudo sed -i 's/archive.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
+	sudo sed -i 's/security.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
+fi
+sudo sed -i '/%sudo/c %sudo  ALL=(ALL:ALL)  NOPASSWD:ALL' /etc/sudoers
+sudo apt-get update && sudo apt-get upgrade -y >/dev/null
+clear
+echo 正在安装必备的软件包...
+sudo apt-get install python3 python3-pip default-jre bc cpio android-sdk-libsparse-utils aria2 openjdk-11-jre p7zip-full -y >/dev/null 2>&1
+pip3 install protobuf -i $PIP_MIRROR >/dev/null 2>&1
+pip3 install beautifulsoup4 -i $PIP_MIRROR >/dev/null 2>&1
+pip3 install requests -i $PIP_MIRROR >/dev/null 2>&1
+pip3 install pycryptodome -i $PIP_MIRROR >/dev/null 2>&1
+pip3 install docopt -i $PIP_MIRROR >/dev/null 2>&1
+sudo apt update --fix-missing >/dev/null 2>&1
+clear
+echo 
+echo 修复文件权限...
+echo 
+sudo find ./** |grep $binner |while read line; do
+sudo chown -hR $myuser:$myuser "$line"
+sudo chmod 777 "$line"
+done
+sudo chown -hR $myuser:$myuser ./*
+sudo chmod -R 777 $LOCALDIR
+sudo touch $binner/depment
+promenu
+fi
+}
+
+# 项目菜单
+function promenu()
+{
+clear
+cd $LOCALDIR  
+echo -e "\033[34m $(cat $binner/banner) \033[0m"
+echo 
+  echo -ne "\033[36m “$shiju”"
+  echo -e "\033[36m---$author《$from》\033[0m"
+echo -e " \n"
+echo -e " >\033[31m 项目列表 \033[0m\n"
+echo -e "   [0]  新建项目\n"
+pro=0
+if ls TI_* >/dev/null 2>&1;then
+	for pros in $(ls -d TI_*/| sed 's/\///g')
+	do 
+	if [ -d "./$pros" ];then
+	pro=$((pro+1))
+	echo -e "   [$pro]  $pros\n"
+	eval "pro$pro=$pros" 
+	fi
+	done
+fi
+echo -e "\033[33m  > [j] - 解压    [d] - 下载    [e] - 退出    [s] - 设置 \033[0m"
+echo -e ""
+if [ "$new" == "1" ]; then
+	echo -e "\033[32m 新用户提醒 仅在首次使用时显示，首次在主页面退出后，将不再出现 \033[0m" 
+	echo -e "\033[32m 新用户提醒：MIUI更新地址一键获取在“下载”选项中 \033[0m" 
+fi
+echo -e " \n"
+read -p "  请输入序号：" op_pro
+if [ "$op_pro" == "j" ]; then
+	unzipp
+elif [ "$op_pro" == "d" ]; then
+	xiazai
+elif [ "$op_pro" == "0" ]; then
+	newpro
+elif [ "$op_pro" == "e" ]; then
+	if [ "$new" == "1" ]; then
+	touch $binner/sta
+	fi
+	clear
+	echo  
+	echo -n    感&&sleep 0.2&&echo -n 谢&&sleep 0.2&&echo -n 使&&sleep 0.2&&echo -n 用&&sleep 0.2&&echo -n T&&sleep 0.2&&echo -n I&&sleep 0.2&&echo -n K&&sleep 0.2&&echo 全能工具箱！&&sleep 0.2
+	echo -n    如&&sleep 0.1&&echo -n 果&&sleep 0.1&&echo -n 有&&sleep 0.1&&echo -n 能&&sleep 0.1&&echo -n 力&&sleep 0.1&&echo -n ，&&sleep 0.1&&echo -n 希&&sleep 0.2&&echo -n 望&&sleep 0.2&&echo -n 您&&sleep 0.2&&echo -n 能&&sleep 0.2&&echo -n 分&&sleep 0.2&&echo -n 享&&sleep 0.2&&echo -n 并&&sleep 0.2&&echo -n 参&&sleep 0.2&&echo -n 与&&sleep 0.2&&echo -n 完&&sleep 0.2&&echo -n 善&&sleep 0.2&&echo -n 这&&sleep 0.2&&echo -n 个&&sleep 0.2&&echo -n 开&&sleep 0.2&&echo -n 源&&sleep 0.2&&echo -n 项&&sleep 0.2&&echo -n 目&&sleep 0.2&&echo ！
+	exit
+	clear
+elif [ "$op_pro" == "s" ]; then
+	settings
+elif [[ $op_pro =~ ^-?[1-9][0-9]*$ ]]; then
+	if ls TI_* >/dev/null 2>&1;then
+	if [ $op_pro -gt $pro ];then
+	echo 输入有误！
+	sleep $sleeptime
+	promenu
+	else
+		eval "project=\$pro$op_pro"
+		cd $project
+		if ls payload >/dev/null 2>&1;then
+			payloadmenu
+		else
+			menu
+		fi
+	fi
+	else
+	echo 输入有误！
+	sleep $sleeptime
+	promenu
+	fi
+else
+	echo  输入有误！
+	sleep $sleeptime
+	promenu
+fi
+}
+
+
+# 解压制作
+function unzipp()
+{
+clear
+cd $LOCALDIR
+echo -e " \033[31m >ROM列表 \033[0m\n"
+zipn=0
+Yeliqin "   请将rom放于$Sourcedir下！"
+if ls -d $Sourcedir/*.zip >/dev/null 2>&1 || ls -d $Sourcedir/*.ozip >/dev/null 2>&1 ;then
+if ls -d $Sourcedir/*.zip >/dev/null 2>&1;then
+cd $Sourcedir
+	for zip0 in $(ls *.zip)
+	do 
+	if [ -f "$zip0" ]; then
+		zip=$(echo "$zip0" )
+		zipn=$((zipn+1))
+		echo -e "   [$zipn]- $zip\n"
+		eval "zip$zipn=$zip" 
+	fi
+	done
+cd $LOCALDIR
+fi
+if ls -d $Sourcedir/*.ozip >/dev/null 2>&1 ;then
+cd $Sourcedir
+	for zip0 in $(ls *.ozip)
+	do 
+	if [ -f "$zip0" ]; then
+		zip=$(echo "$zip0" )
+		zipn=$((zipn+1))
+		echo -e "   [$zipn]- $zip\n"
+		eval "zip$zipn=$zip" 
+	fi
+	done
+cd $LOCALDIR
+fi
+else
+echo "	没有ROM文件！"
+fi
+echo -e "-------------------------------------------------------\n"
+echo -e ""
+read -p "请输入对应序列号：" zipd
+if [[ $zipd =~ ^-?[1-9][0-9]*$ ]]; then
+if [ $zipd -gt $zipn ];then
+echo "输入有误！！"
+sleep $sleeptime
+promenu
+else
+eval "zip=\$zip$zipd"
+read -p "请输入项目名称(非中文,可留空)：" projec
+if test -z "$projec";then
+	echo "自动以rom命名！"
+	zp=$(echo "$zip" | rev | cut -d'.' -f1 --complement | rev)
+	project=TI_$zp
+	mkdir $project
+else  
+	project=TI_$projec
+	mkdir $project
+fi
+sudo chmod -R 777 ./$project
+sudo chown -R root:root ./$project
+echo "解压刷机包中..."
+7z x "$Sourcedir/$zip" -o"./$project/" > /dev/null
+echo "解压zip完成"
+sleep $sleeptime
+cd $project
+autounpack
+fi
+elif [ "$zipd" == "h" ]; then
+promenu
+else
+echo "输入有误！！"
+sleep $sleeptime
+promenu
+fi
+
+}
+
+
+# 新建项目
+function newpro()
+{
+clear
+cd $LOCALDIR
+echo " "
+read -p "请输入项目名称(非中文)：TI_" projec
+if test -z "$projec";then
+  echo "   请键入！"
+  sleep $sleeptime
+  promenu
+else  
+  project=TI_$projec
+  mkdir $project
+  menu
+fi
+}
+
+# 主菜单
+function menu()
+{
+clear
+PROJECT_DIR=$LOCALDIR/$project
+cd $PROJECT_DIR
+clear
+if [[ ! -d "TI_config" ]]; then
+mkdir $PROJECT_DIR/TI_config
+fi
+
+echo -e " \033[31m >ROM菜单 \033[0m\n"
+echo -e " \033[36m  项目：$project\n"
+if [[ -f $PROJECT_DIR/system/system/build.prop ]]; then
+	SYSTEM_DIR="$PROJECT_DIR/system/system"
+elif [[ -f $PROJECT_DIR/system/build.prop ]]; then
+	SYSTEM_DIR="$PROJECT_DIR/system"
+else
+	SYSTEM_DIR=0
+	echo "	非完整ROM项目"
+fi
+if [[ -f $SYSTEM_DIR/build.prop ]]; then
+vend=$(cat $SYSTEM_DIR/build.prop | grep "ro.product.manufacturer" | cut -d"=" -f 2)
+version=$(cat $SYSTEM_DIR/build.prop | grep "ro.build.version.release=" | cut -d"=" -f 2)
+Model=$(cat $SYSTEM_DIR/build.prop | grep "ro.product.mod_device" | cut -d"=" -f 2)
+if ! grep -q "ro.product.mod_device" $SYSTEM_DIR/build.prop;then
+	Model=$(cat $SYSTEM_DIR/build.prop | grep "ro.product.model" | cut -d"=" -f 2)
+fi	
+Yeliqin "    机型：${vend} ${Model}  系统版本：Android ${version} "
+if grep -q "ro.miui." $SYSTEM_DIR/build.prop;then
+Yeliqin "    检测到：MIUI系统，已开启适配"
+export romver=MIUI
+fi
+fi
+echo  
+echo -e "\033[34m    ============================\033[0m"
+echo -e "\033[31m    1> 回到主页      2> 分解菜单\033[0m" 
+echo -e "\033[32m    3> 合成菜单      4> 扩展插件\033[0m" 
+echo -e "\033[33m    5> 打包ROM       6> 其他杂项\033[0m" 
+if [ "$platform" = "aarch64" ];then
+echo -e "\033[36m    7> 移动分区文件\033[0m" 
+fi
+echo -e "\033[34m    ============================\033[0m"
+echo  
+read -p "    请输入编号: " op_menu
+case $op_menu in
+        1)
+        promenu
+        ;;
+		2)
+        unpmenu
+        ;;
+		3)
+        packmenu
+        ;;
+		4)
+        subbed
+        ;;
+		5)
+        packzip
+        ;;
+		7)
+if [ "$platform" = "aarch64" ];then
+        movedir
+else
+echo 输入有误！
+fi
+        ;;
+        *)
+#       echo -e "请输入正确编号"
+        echo -e "本功能暂未开发！"
+		sleep $sleeptime
+        menu
+esac
+}
+
+function zhilian()
+{
+read -p "请输入需要下载ROM的直链：" downrom
+if test -z "$downrom"; then
+  echo "你输了个寂寞"
+  sleep $sleeptime
+  xiazai
+else  
+  echo "开始下载啦"
+  sleep $sleeptime
+  aria2c -s 9 -x 2 $downrom -d $Sourcedir
+  zip=$(basename $downrom)
+  echo "下载完成！"
+  sleep $sleeptime
+fi
+}
+
+
+function subbed()
+{
+clear
+mkdir $binner/subs
+clear
+echo  
+echo -e " >\033[31m 插件列表 \033[0m\n"
+echo -e "----------------------------------------------\n"
+subn=0
+cd $binner/subs
+for sub in $(ls)
+do 
+	if [ -d "./$sub" ];then
+	subn=$((subn+1))
+	echo -e "   [$subn]- $sub\n"
+	eval "sub$subn=$sub" 
+	fi
+done
+echo -e "----------------------------------------------\n"
+echo -e "\033[33m  > [n] - 安装    [d] - 删除    [e] - 项目菜单\033[0m"
+echo -e ""
+read -p "  请输入序号：" op_pro
+if [ "$op_pro" == "n" ]; then
+	subber
+elif [ "$op_pro" == "d" ]; then
+	read -p "请输入你要删除的插件序号：" sub
+	eval "sub=\$sub$subn"
+	#再次确认
+	rm -fr $sub
+	echo 删除成功！
+	sleep $sleeptime
+	subbed
+elif [ "$op_pro" == "e" ]; then
+	menu
+elif [[ $op_pro =~ ^-?[1-9][0-9]*$ ]]; then
+	if ls >/dev/null 2>&1;then
+	if [ $op_pro -gt $subn ];then
+	echo 输入有误！
+	sleep $sleeptime
+	menu
+	else
+	#检验插件完整性
+		eval "sub=\$sub$subn"
+		cd $PROJECT_DIR&&$binner/subs/$sub/run.sh
+		subbed
+	fi
+	else
+	echo 输入有误！
+	sleep $sleeptime
+	subbed
+	fi
+else
+	echo  输入有误！
+	sleep $sleeptime
+	subbed
+fi
+
+}
+
+function subber()
+{
+clear
+cd $LOCALDIR
+subn=0
+Yeliqin "  请将插件放于$Sourcedir下！"
+if ls -d $Sourcedir/*.sub >/dev/null 2>&1;then
+cd $Sourcedir
+	for sub0 in $(ls *.sub)
+	do 
+	if [ -f "$sub0" ]; then
+		sub=$(echo "$sub0" | cut -d'/' -f4)
+		subn=$((subn+1))
+		echo -e "   [$subn]- $sub\n"
+		eval "sub$subn=$sub" 
+	fi
+	done
+cd $LOCALDIR
+else
+echo "	没有插件文件！"
+fi
+echo -e "-------------------------------------------------------\n"
+echo -e ""
+read -p "请输入对应序列号：" subd
+if [ "$subd" == "0" ]; then
+	menu
+elif [[ $subd =~ ^-?[1-9][0-9]*$ ]]; then
+if [ $subd -gt $subn ];then
+echo "输入有误！！"
+sleep $sleeptime
+subber
+else
+eval "sub=\$sub$subd"
+zs=$(echo "$sub" | rev | cut -d'.' -f1 --complement | rev)
+mkdir $binner/subs/$zs
+echo "安装中..."
+7z x "$Sourcedir/$sub" -o"$binner/subs/$zs" > /dev/null
+sudo chmod -R 777 $binner/subs/$zs
+echo "安装完成"
+sleep $sleeptime
+subbed
+fi
+elif [ "$zipd" == "h" ]; then
+subbed
+else
+echo "输入有误！！"
+sleep $sleeptime
+subbed
+fi
+}
+
+
+function packzip()
+{
+clear
+echo -e "\033[33m 	<-打包ZIP \033[0m" 
+Yeliqin "	将会打包TI_out中已有文件"
+if [[ ! -d "TI_out" ]]; then
+	Yeliqin "	TI_out是空的，爬！"
+	sleep $sleeptime
+else
+cd TI_out
+#cp -afrv $afrv/dynamic/* ./ > /dev/null
+#touch 
+Yeliqin "	👴没写好！"
+fi
+menu
+}
+
+
+function movedir()
+{
+clear
+echo -e "\033[31m<-移动项目文件 \033[0m" 
+Yeliqin "	将会移动本目录下部分文件至/sdcard/$mydir/$project"
+fi=0
+echo -e "   [0]- 返回菜单\n"
+if ls >/dev/null 2>&1;then
+	for fis in $(ls)
+	do 
+	if [ -d "./$fis" ];then
+	fi=$((fi+1))
+	if [ "$fis" == "TI_config" ] || [ "$fis" == "TI_out" ];then
+	echo -e "\033[31m   [$fi]- $fis\n\033[0m"
+	fi
+	eval "fi$fi=$fis" 
+	fi
+	done
+fi
+echo -e "----------------------------------------------\n"
+read -p "  请输入序号：" op
+if [[ $op =~ ^-?[1-9][0-9]*$ ]]; then
+if [ $op -gt $fi ];then
+echo "输入有误！！"
+sleep $sleeptime
+menu
+else
+eval "mof=\$fi$op"
+if [[ ! -d "/sdcard/$mydir/$project" ]]; then
+mkdir /sdcard/$mydir/$project
+fi
+echo 移动中...
+mv $PROJECT_DIR/$mof /sdcard/$mydir/$project
+read -p "  请自由修改/sdcard/$mydir/$project文件，完成后，回车移回项目文件" null
+mv /sdcard/$mydir/$project/* $PROJECT_DIR
+menu
+fi
+else
+echo "输入有误！！"
+sleep $sleeptime
+menu
+fi
+
+
+
+}
+
+
+function miuiupdate()
+{
+echo -e "\033[31m 国际代号说明：[CN]国内版 [ID]印尼版 [RU]俄版 [Global]国际版 [EEA]欧版 [TR]土耳其版  [TW]台湾版 [GP]日本版 [SG]新加坡版 \033[0m" 
+read -p "请输入地区代号：" region
+read -p "请输入机型代号：" mod
+#列出当前机型含有的地区版本
+sed -i 's/region = "[^"]*/region = "'$region'/' $binner/get_miui.py
+read -p "请选择类型[1]卡刷包 [2]线刷包：" ver
+	case "$ver" in
+	2)
+	  sed -i 's/rom_cleases = "[^"]*/rom_cleases = "fastboot/' $binner/get_miui.py
+	  ;;
+    *)
+      sed -i 's/rom_cleases = "[^"]*/rom_cleases = "recovery/' $binner/get_miui.py
+	  esac
+echo "[1]开发版 [2]稳定版" 
+read -p "请选择类型：" ver
+	case "$ver" in
+	2)
+	  sed -i 's/rom_version = "[^"]*/rom_version = "stable/' $binner/get_miui.py
+	  ;;
+    *)
+      sed -i 's/rom_version = "[^"]*/rom_version = "beta/' $binner/get_miui.py
+	  esac
+miuilink=`python3 $binner/get_miui.py $mod`
+echo $miuilink
+read -p "是否开始下载？[1/0]" ver
+	case "$ver" in
+	1)
+	echo "开始下载啦"
+	sleep $sleeptime
+	aria2c -s 9 -x 2 $miuilink -d $Sourcedir
+	zip=$(basename $miuilink)
+	echo "下载完成！"
+	;;
+    *)
+	echo  
+	esac
+sleep $sleeptime
+xiazai
+}
+
+# 下载器
+function xiazai()
+{
+clear
+cd $LOCALDIR
+echo " "
+echo -e "-------------------------------------------------------\n"
+echo -e "\033[33m  > [1] - 返回主页    [2] - 输入直链    [3] - 自动获取MIUI更新地址 \033[0m"
+read -p "	请输入编号: " op_menu
+case $op_menu in
+        1)
+        promenu
+        ;;
+		2)
+        zhilian
+        ;;
+		3)
+        miuiupdate
+        ;;
+        *)
+#       echo -e "请输入正确编号"
+        echo -e "本功能暂未开发！"
+		sleep $sleeptime
+        promenu
+esac
+}
+
+# 设置
+function settings()
+{
+clear
+cd $LOCALDIR
+echo -e "\033[33m   >设置 \033[0m"
+echo  
+echo " 	1>修改等待时间 "
+echo " 	2>修改brotli压缩等级"
+echo " 	3>开/关自动补全config"
+echo " 	4>安卓-修改内置存储rom目录"
+echo " 	5>更新工具内部分依赖"
+echo " 	6>返回主页"
+echo 
+read -p "   请输入编号: " op_pro
+if [ "$op_pro" == "1" ]; then
+	settings1
+elif [ "$op_pro" == "2" ]; then
+	settings2
+elif [ "$op_pro" == "3" ]; then
+	settings3
+elif [ "$op_pro" == "4" ]; then
+	settings4
+elif [ "$op_pro" == "4" ]; then
+	toolupdate
+elif [ "$op_pro" == "6" ]; then
+	promenu
+else
+	echo  输入有误！
+	sleep $sleeptime
+	settings
+fi
+}
+
+function settings1()
+{
+echo 调整部分命令输出后的等待时间，当前为：$sleeptime秒
+read -p "	请输入（非负数）: " sleeptime
+sed -i 's/^sleeptime=.*/sleeptime='$sleeptime'/'  $binner/settings
+source $binner/settings
+settings
+}
+function settings2()
+{
+echo 调整brotli压缩等级（整数1-9，级别越高，压缩率越大，耗时越长），当前为：$brcom级
+read -p "	请输入（1-9）: " brcom
+sed -i 's/^brcom=.*/brcom='$brcom'/'  $binner/settings
+source $binner/settings
+settings
+}
+function settings3()
+{
+echo 自动补全config以确保权限正常，但耗时较长。关闭后，您新增的文件无法确保权限正常。
+read -p "	请输入[1/0]: " configcompl
+sed -i 's/^configcompl=.*/configcompl='$configcompl'/'  $binner/settings
+source $binner/settings
+settings
+}
+function settings4()
+{
+echo 修改安卓端在内置存储识别ROM的路径。当前为/sdcard/$mydir
+read -p "	请输入文件夹名称(英文): " mydir
+sed -i 's/^mydir=.*/mydir='$mydir'/'  $binner/settings
+source $binner/settings
+settings
+}
+
+function toolupdate()
+{
+echo   暂未开发！
+sleep $sleeptime
+settings
+}
+
+
+checkpath
