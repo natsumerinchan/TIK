@@ -88,7 +88,7 @@ v2.2更新
 
 2----一键安装ubuntu 
 
-	curl https://gitee.com/yeliqin666/proot-ubuntu/raw/master/onekey_install.sh
+	bash <(curl -s https://gitee.com/yeliqin666/proot-ubuntu/raw/master/onekey_install.sh)
 
 
 ####  **使用说明** 
