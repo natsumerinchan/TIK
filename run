@@ -907,7 +907,7 @@ else
   sleep $sleeptime
   unpmenu
 fi
-dtc="$binner/dtb_tools/dtc"
+dtc="$ebinner/dtc"
 mkdtimg_tool="$binner/dtb_tools/mkdtboimg.py"
 dtbodir="./dtbo"
 mkdir -p $dtbodir/dtbo_files
@@ -934,7 +934,7 @@ cd $LOCALDIR && cd $project
 echo -e "\033[33m <-打包DTBO \033[0m" 
 
 rm -rf $dtbodir
-dtc="$binner/dtb_tools/dtc"
+dtc="$ebinner/dtc"
 mkdtimg_tool="$binner/dtb_tools/mkdtboimg.py"
 dtbodir="$PROJECT_DIR/dtbo"
 
@@ -1038,7 +1038,7 @@ if [ ! -e ./dtb ];then
   sleep $sleeptime
   unpmenu
 fi
-dtc="$binner/dtb_tools/dtc"
+dtc="$ebinner/dtc"
 dtbdir="$PROJECT_DIR/dtbs"
 mkdir $dtbdir
 mkdir -p $dtbdir/dts_files
@@ -1058,7 +1058,7 @@ function makedtb()
 cd $LOCALDIR && cd $project
 echo -e "\033[33m<-打包DTB \033[0m" 
 
-dtc="$binner/dtb_tools/dtc"
+dtc="$ebinner/dtc"
 dtbdir="$PROJECT_DIR/dtbs"
 
 rm -rf $dtbdir/new_dtb_files
