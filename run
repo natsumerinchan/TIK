@@ -165,6 +165,7 @@ pip3 install -upgrade pip -i $PIP_MIRROR
 pip3 install pycryptodome -i $PIP_MIRROR
 pip3 install docopt -i $PIP_MIRROR
 pip3 install requests -i $PIP_MIRROR
+pip3 install beautifulsoup4 -i $PIP_MIRROR
 ${su} apt --fix-broken install
 ${su} apt update --fix-missing
 touch $binner/depment
