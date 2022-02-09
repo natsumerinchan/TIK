@@ -154,18 +154,14 @@ fi
 yecho "开始配置环境..."
 sleep $sleeptime
 yecho "更换国内清华源..."
-if [ "$platform" = "aarch64" ];then
-	mv /etc/apt/sources.list /etc/apt/sources.list.bak
-	echo -e "deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ focal main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ focal-updates main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ focal-backports main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ focal-security main restricted universe multiverse" >> /etc/apt/sources.list
-else
-	${su} cp /etc/apt/sources.list /etc/apt/sources.list.bak
-	${su} sed -i 's/archive.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
-	${su} sed -i 's/security.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
-fi
+${su} cp /etc/apt/sources.list /etc/apt/sources.list.bak
+${su} sed -i 's/archive.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
+${su} sed -i 's/security.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
 yecho "正在更新软件列表..."
 ${su} apt-get update && ${su} apt-get upgrade -y >/dev/null
 yecho "正在安装必备软件包..."
 ${su} apt-get install python3 python3-pip curl dialog default-jre bc cpio android-sdk-libsparse-utils aria2 openjdk-11-jre p7zip-full -y
+pip3 install -upgrade pip -i $PIP_MIRROR
 pip3 install pycryptodome -i $PIP_MIRROR
 pip3 install docopt -i $PIP_MIRROR
 pip3 install requests -i $PIP_MIRROR
@@ -657,10 +653,10 @@ case $op_menu in
 		packmenu
 		;;		
 		6)
-        packdtbo
+        makedtbo
 		;;		
 		7)
-        packdtb
+        makedtb
 		;;
         *)
         ywarn "  请输入正确编号！"
@@ -956,14 +952,15 @@ done
 file_number=$(ls -l $dtbodir/new_dtbo_files | grep "^-" | wc -l)
 echo "当前dtbo文件个数为：$file_number "
 yecho "正在生成dtbo.img..."
-$mkdtimg_tool create "$PROJECT_DIR/TI_out/dtbo.img" --page_size="4096" $dtbodir/new_dtbo_files/*
+$mkdtimg_tool $dtbodir/new_dtbo_files/* create "$PROJECT_DIR/TI_out/dtbo.img" --page_size="4096" 
 if [ $? = 0 ];then
   ysuc "生成完毕!"
   chmod 777 -R $dtbodir
 else
   ywarn "dtbo.img 生成失败!"
 fi
-unpmenu
+sleep $sleeptime
+packmenu
 }
 
 
@@ -1078,7 +1075,7 @@ find $dtbdir/new_dtb_files -name "dtb*" -exec cat {} > $PROJECT_DIR/TI_out/dtb \
 ysuc "回编译完成！"
 sleep $sleeptime
 chmod 777 -R $dtbdir
-unpmenu
+packmenu
 }
 
 
