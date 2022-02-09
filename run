@@ -1,279 +1,46 @@
 #!/bin/bash
-Yeliqin() { echo -e "[36;5m$*[0m"; }
-content=$(curl -s https://v1.jinrishici.com/all.json)
-  shiju=$(echo $content| cut -d \" -f 4 )
-  from=$(echo $content| cut -d \" -f 8)
-  author=$(echo $content| cut -d \" -f 12)
-  ver=5.1
-  cloud=$(curl -s "https://gitee.com/xiaobai2333/CYToolkitAccount/blob/master/version.md" | grep -w $ver | sed -n '2p' | cut -c 1-3)
-  clou=$(echo $cloud | cut -c 1-3)
-  if [[ $clou != $ver ]]; then
-  version="有更新"
-  mains=1
-  else
-  version="无更新"
-  mains=0
-  fi
-dyunboot=1
 LOCALDIR="$(cd $(dirname $0); pwd)"
 binner=$LOCALDIR/bin
+source $binner/settings
+show() { source $binner/show; }
+yecho(){ echo -e "\033[36m[`date '+%H:%M:%S'`]${1}\033[0m" ; }	#显示打印
+ywarn(){ echo -e "\033[31m${1}\033[0m" ; }	#显示打印
+ysuc(){ echo -e "\033[32m[`date '+%H:%M:%S'`]${1}\033[0m" ; }	#显示打印
+getprop() { grep "$1" "${SYSTEM_DIR}/build.prop" | cut -d "=" -f 2; } #读取机型配置
+getconfig() { grep "$1" "${PROJECT_DIR}/TI_config/project_config" | cut -d "=" -f 2; } #读取项目信息
+
+if [[ $(uname -m) != "aarch64" ]]; then su="sudo ";fi;
+
+function timeout() {
+waitsec=2
+( $* ) & pid=$!
+( sleep $waitsec && kill -HUP $pid ) 2>/dev/null & watchdog=$!
+# if command finished
+if wait $pid 2>/dev/null; then
+    pkill -HUP -P $watchdog
+    wait $watchdog
+fi
+# else: command interrupted
+}
+
+content=$(timeout curl -s https://v1.jinrishici.com/all.json)
+shiju=$(echo $content| cut -d \" -f 4 )
+from=$(echo $content| cut -d \" -f 8)
+author=$(echo $content| cut -d \" -f 12)
+dyunboot=1
 HOST=$(uname)
 platform=$(uname -m)
 AIK="$binner/AIK"
-export LD_LIBRARY_PATH=$binner/$HOST/$platform/lib64
 export ebinner=$binner/$HOST/$platform
-export PS1="[\e[32;1m\u@\h \W]\\$" 
-source $binner/settings
-source $binner/function2
+export PS1="[\e[32;1m\u@\h \W]\\$"
+ 
 if [ "$platform" = "aarch64" ];then
 command+=" -b /sdcard"
 Sourcedir=/sdcard/$mydir
 else
 Sourcedir=$LOCALDIR
 fi
-if [[ -f "$binner/sta" ]]; then
-	new=0
-else
-	new=1
-fi
 
-# 检查是否需要安装环境
-function checkpath()
-{
-clear
-cd $LOCALDIR
-if [[ -f "$binner/depment" ]]; then
-promenu
-else
-clear
-echo -n 您&&sleep 0.2&&echo -n 好&&sleep 0.2&&echo -n ，&&sleep 0.2&&echo -n 欢&&sleep 0.2&&echo -n 迎&&sleep 0.2&&echo -n 使&&sleep 0.2&&echo -n 用&&sleep 0.2&&echo -n  TIK &&sleep 0.2&&echo 全能工具箱！&&sleep 0.2
-echo -n 将&&sleep 0.2&&echo -n 通&&sleep 0.2&&echo -n 过&&sleep 0.2&&echo -n 几&&sleep 0.2&&echo -n 个&&sleep 0.2&&echo -n 步&&sleep 0.2&&echo -n 骤&&sleep 0.2&&echo -n ，&&sleep 0.2&&echo -n 帮&&sleep 0.2&&echo -n 您&&sleep 0.2&&echo -n 配&&sleep 0.2&&echo -n 置&&sleep 0.2&&echo -n 好&&sleep 0.2&&echo -n 工&&sleep 0.2&&echo 具&&sleep 0.2
-PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
-clear
-echo -e "\033[34m $(cat $binner/banner) \033[0m"
-#if [[ $(which id) ]]; then
-#if [[ $(id -u) = "0" ]]; then
-#userid="root"
-#fi
-#elif [[ $EUID = "0" ]]; then
-#userid="root"
-#fi
-if [[ $userid = "root" ]]; then
-	clear
-	echo "工具不允许在root环境下运行"
-	sleep $sleeptime
-	exit
-fi
-Yeliqin "开始配置环境"
-sleep $sleeptime
-clear
-echo "更换国内清华源 ..."
-if [ "$platform" = "aarch64" ];then
-	mv /etc/apt/sources.list /etc/apt/sources.list.bak
-	echo -e "deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ focal main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ focal-updates main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ focal-backports main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ focal-security main restricted universe multiverse" >> /etc/apt/sources.list
-else
-	sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
-	sudo sed -i 's/archive.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
-	sudo sed -i 's/security.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
-fi
-sudo sed -i '/%sudo/c %sudo  ALL=(ALL:ALL)  NOPASSWD:ALL' /etc/sudoers
-sudo apt-get update && sudo apt-get upgrade -y >/dev/null
-clear
-echo 正在安装必备的软件包...
-sudo apt-get install python3 python3-pip default-jre bc cpio android-sdk-libsparse-utils aria2 openjdk-11-jre p7zip-full -y >/dev/null 2>&1
-pip3 install protobuf -i $PIP_MIRROR >/dev/null 2>&1
-pip3 install beautifulsoup4 -i $PIP_MIRROR >/dev/null 2>&1
-pip3 install requests -i $PIP_MIRROR >/dev/null 2>&1
-pip3 install pycryptodome -i $PIP_MIRROR >/dev/null 2>&1
-pip3 install docopt -i $PIP_MIRROR >/dev/null 2>&1
-sudo apt update --fix-missing >/dev/null 2>&1
-clear
-echo 
-echo 修复文件权限...
-echo 
-sudo find ./** |grep $binner |while read line; do
-sudo chown -hR $myuser:$myuser "$line"
-sudo chmod 777 "$line"
-done
-sudo chown -hR $myuser:$myuser ./*
-sudo chmod -R 777 $LOCALDIR
-sudo touch $binner/depment
-promenu
-fi
-}
-
-# 项目菜单
-function promenu()
-{
-clear
-cd $LOCALDIR  
-echo -e "\033[34m $(cat $binner/banner) \033[0m"
-echo 
-  echo -ne "\033[36m “$shiju”"
-  echo -e "\033[36m---$author《$from》\033[0m"
-echo -e " \n"
-echo -e " >\033[31m 项目列表 \033[0m\n"
-echo -e "   [0]  新建项目\n"
-pro=0
-if ls TI_* >/dev/null 2>&1;then
-	for pros in $(ls -d TI_*/| sed 's/\///g')
-	do 
-	if [ -d "./$pros" ];then
-	pro=$((pro+1))
-	echo -e "   [$pro]  $pros\n"
-	eval "pro$pro=$pros" 
-	fi
-	done
-fi
-echo -e "\033[33m  > [j] - 解压    [d] - 下载    [e] - 退出    [s] - 设置 \033[0m"
-echo -e ""
-if [ "$new" == "1" ]; then
-	echo -e "\033[32m 新用户提醒 仅在首次使用时显示，首次在主页面退出后，将不再出现 \033[0m" 
-	echo -e "\033[32m 新用户提醒：MIUI更新地址一键获取在“下载”选项中 \033[0m" 
-fi
-echo -e " \n"
-read -p "  请输入序号：" op_pro
-if [ "$op_pro" == "j" ]; then
-	unzipp
-elif [ "$op_pro" == "d" ]; then
-	xiazai
-elif [ "$op_pro" == "0" ]; then
-	newpro
-elif [ "$op_pro" == "e" ]; then
-	if [ "$new" == "1" ]; then
-	touch $binner/sta
-	fi
-	clear
-	echo  
-	echo -n    感&&sleep 0.2&&echo -n 谢&&sleep 0.2&&echo -n 使&&sleep 0.2&&echo -n 用&&sleep 0.2&&echo -n T&&sleep 0.2&&echo -n I&&sleep 0.2&&echo -n K&&sleep 0.2&&echo 全能工具箱！&&sleep 0.2
-	echo -n    如&&sleep 0.1&&echo -n 果&&sleep 0.1&&echo -n 有&&sleep 0.1&&echo -n 能&&sleep 0.1&&echo -n 力&&sleep 0.1&&echo -n ，&&sleep 0.1&&echo -n 希&&sleep 0.2&&echo -n 望&&sleep 0.2&&echo -n 您&&sleep 0.2&&echo -n 能&&sleep 0.2&&echo -n 分&&sleep 0.2&&echo -n 享&&sleep 0.2&&echo -n 并&&sleep 0.2&&echo -n 参&&sleep 0.2&&echo -n 与&&sleep 0.2&&echo -n 完&&sleep 0.2&&echo -n 善&&sleep 0.2&&echo -n 这&&sleep 0.2&&echo -n 个&&sleep 0.2&&echo -n 开&&sleep 0.2&&echo -n 源&&sleep 0.2&&echo -n 项&&sleep 0.2&&echo -n 目&&sleep 0.2&&echo ！
-	exit
-	clear
-elif [ "$op_pro" == "s" ]; then
-	settings
-elif [[ $op_pro =~ ^-?[1-9][0-9]*$ ]]; then
-	if ls TI_* >/dev/null 2>&1;then
-	if [ $op_pro -gt $pro ];then
-	echo 输入有误！
-	sleep $sleeptime
-	promenu
-	else
-		eval "project=\$pro$op_pro"
-		cd $project
-		if ls payload >/dev/null 2>&1;then
-			payloadmenu
-		else
-			menu
-		fi
-	fi
-	else
-	echo 输入有误！
-	sleep $sleeptime
-	promenu
-	fi
-else
-	echo  输入有误！
-	sleep $sleeptime
-	promenu
-fi
-}
-
-
-# 解压制作
-function unzipp()
-{
-clear
-cd $LOCALDIR
-echo -e " \033[31m >ROM列表 \033[0m\n"
-zipn=0
-Yeliqin "   请将rom放于$Sourcedir下！"
-if ls -d $Sourcedir/*.zip >/dev/null 2>&1 || ls -d $Sourcedir/*.ozip >/dev/null 2>&1 ;then
-if ls -d $Sourcedir/*.zip >/dev/null 2>&1;then
-cd $Sourcedir
-	for zip0 in $(ls *.zip)
-	do 
-	if [ -f "$zip0" ]; then
-		zip=$(echo "$zip0" )
-		zipn=$((zipn+1))
-		echo -e "   [$zipn]- $zip\n"
-		eval "zip$zipn=$zip" 
-	fi
-	done
-cd $LOCALDIR
-fi
-if ls -d $Sourcedir/*.ozip >/dev/null 2>&1 ;then
-cd $Sourcedir
-	for zip0 in $(ls *.ozip)
-	do 
-	if [ -f "$zip0" ]; then
-		zip=$(echo "$zip0" )
-		zipn=$((zipn+1))
-		echo -e "   [$zipn]- $zip\n"
-		eval "zip$zipn=$zip" 
-	fi
-	done
-cd $LOCALDIR
-fi
-else
-echo "	没有ROM文件！"
-fi
-echo -e "-------------------------------------------------------\n"
-echo -e ""
-read -p "请输入对应序列号：" zipd
-if [[ $zipd =~ ^-?[1-9][0-9]*$ ]]; then
-if [ $zipd -gt $zipn ];then
-echo "输入有误！！"
-sleep $sleeptime
-promenu
-else
-eval "zip=\$zip$zipd"
-read -p "请输入项目名称(非中文,可留空)：" projec
-if test -z "$projec";then
-	echo "自动以rom命名！"
-	zp=$(echo "$zip" | rev | cut -d'.' -f1 --complement | rev)
-	project=TI_$zp
-	mkdir $project
-else  
-	project=TI_$projec
-	mkdir $project
-fi
-sudo chmod -R 777 ./$project
-sudo chown -R root:root ./$project
-echo "解压刷机包中..."
-7z x "$Sourcedir/$zip" -o"./$project/" > /dev/null
-echo "解压zip完成"
-sleep $sleeptime
-cd $project
-autounpack
-fi
-elif [ "$zipd" == "h" ]; then
-promenu
-else
-echo "输入有误！！"
-sleep $sleeptime
-promenu
-fi
-
-}
-
-
-# 新建项目
-function newpro()
-{
-clear
-cd $LOCALDIR
-echo " "
-read -p "请输入项目名称(非中文)：TI_" projec
-if test -z "$projec";then
-  echo "   请键入！"
-  sleep $sleeptime
-  promenu
-else  
-  project=TI_$projec
-  mkdir $project
-  menu
-fi
-}
 
 # 主菜单
 function menu()
@@ -281,43 +48,41 @@ function menu()
 clear
 PROJECT_DIR=$LOCALDIR/$project
 cd $PROJECT_DIR
+dynam=9
 clear
 if [[ ! -d "TI_config" ]]; then
 mkdir $PROJECT_DIR/TI_config
 fi
 
-echo -e " \033[31m >ROM菜单 \033[0m\n"
-echo -e " \033[36m  项目：$project\n"
+echo -e " \033[31m>ROM菜单 \033[0m\n"
+echo -e "  项目：$project"
 if [[ -f $PROJECT_DIR/system/system/build.prop ]]; then
 	SYSTEM_DIR="$PROJECT_DIR/system/system"
 elif [[ -f $PROJECT_DIR/system/build.prop ]]; then
 	SYSTEM_DIR="$PROJECT_DIR/system"
 else
 	SYSTEM_DIR=0
-	echo "	非完整ROM项目"
+	echo "  非完整ROM项目"
 fi
+procon=$PROJECT_DIR/TI_config/project_config
 if [[ -f $SYSTEM_DIR/build.prop ]]; then
-vend=$(cat $SYSTEM_DIR/build.prop | grep "ro.product.manufacturer" | cut -d"=" -f 2)
-version=$(cat $SYSTEM_DIR/build.prop | grep "ro.build.version.release=" | cut -d"=" -f 2)
-Model=$(cat $SYSTEM_DIR/build.prop | grep "ro.product.mod_device" | cut -d"=" -f 2)
+vend=$(getprop "ro.product.manufacturer")
+version=$(getprop "ro.build.version.release=")
+Model=$(getprop "ro.product.mod_device")
 if ! grep -q "ro.product.mod_device" $SYSTEM_DIR/build.prop;then
-	Model=$(cat $SYSTEM_DIR/build.prop | grep "ro.product.model" | cut -d"=" -f 2)
+	Model=$(getprop "ro.product.model")
 fi	
-Yeliqin "    机型：${vend} ${Model}  系统版本：Android ${version} "
+echo -en "\033[36m  机型：${vend} ${Model}  系统版本：Android ${version}\033[0m"
 if grep -q "ro.miui." $SYSTEM_DIR/build.prop;then
-Yeliqin "    检测到：MIUI系统，已开启适配"
-export romver=MIUI
+miuiver=$(getprop "ro.miui.ui.version.code")
+echo -e "\033[36m  | MIUI $miuiver\033[0m"
 fi
 fi
 echo  
-echo -e "\033[34m    ============================\033[0m"
-echo -e "\033[31m    1> 回到主页      2> 分解菜单\033[0m" 
-echo -e "\033[32m    3> 合成菜单      4> 扩展插件\033[0m" 
-echo -e "\033[33m    5> 打包ROM       6> 其他杂项\033[0m" 
-if [ "$platform" = "aarch64" ];then
-echo -e "\033[36m    7> 移动分区文件\033[0m" 
-fi
-echo -e "\033[34m    ============================\033[0m"
+echo -e "\033[31m    1> 项目菜单      2> 分解菜单\033[0m\n" 
+echo -e "\033[32m    3> 合成菜单      4> 扩展插件\033[0m\n" 
+echo -e "\033[33m    5> 打包ROM       7> 移动分区文件\033[0m\n" 
+echo -e "\033[36m    8> 制作V-AB线刷包\033[0m" 
 echo  
 read -p "    请输入编号: " op_menu
 case $op_menu in
@@ -336,34 +101,251 @@ case $op_menu in
 		5)
         packzip
         ;;
+		6)
+		if [ "$platform" = "aarch64" ];then
+			movedir
+		else
+			ywarn "   请输入正确编号!"
+			menu
+		fi
+        ;;
 		7)
-if [ "$platform" = "aarch64" ];then
-        movedir
-else
-echo 输入有误！
-fi
+        vabpack
         ;;
         *)
-#       echo -e "请输入正确编号"
-        echo -e "本功能暂未开发！"
+        ywarn "   请输入正确编号!"
 		sleep $sleeptime
         menu
 esac
+}
+
+
+# 配置环境
+function checkpath()
+{
+clear
+cd $LOCALDIR
+if [[ -f "$binner/depment" ]]; then
+echo -n "  欢"&&sleep 0.03&&echo -n 迎&&sleep 0.03&&echo -n 使&&sleep 0.02&&echo -n 用&&sleep 0.03&&echo -n T&&sleep 0.03&&echo -n I&&sleep 0.02&&echo -n K&&sleep 0.02&&echo -n 全&&sleep 0.03&&echo -n 能&&sleep 0.02&&echo -n 工&&sleep 0.03&&echo -n 具&&sleep 0.02&&echo -n 箱&&sleep 0.03&&echo -n （体验版）！&&sleep 0.2
+promenu
+else
+clear
+echo -n 您&&sleep 0.04&&echo -n 好&&sleep 0.04&&echo -n ，&&sleep 0.5&&echo -n 欢&&sleep 0.04&&echo -n 迎&&sleep 0.04&&echo -n 使&&sleep 0.04&&echo -n 用&&sleep 0.04&&echo -n  TIK &&sleep 0.04&&echo 全能工具箱！&&sleep 1
+echo -n 将&&sleep 0.04&&echo -n 通&&sleep 0.04&&echo -n 过&&sleep 0.04&&echo -n 几&&sleep 0.04&&echo -n 个&&sleep 0.04&&echo -n 步&&sleep 0.04&&echo -n 骤&&sleep 0.04&&echo -n ，&&sleep 0.5&&echo -n 帮&&sleep 0.04&&echo -n 您&&sleep 0.04&&echo -n 配&&sleep 0.04&&echo -n 置&&sleep 0.04&&echo -n 好&&sleep 0.04&&echo -n 工&&sleep 0.04&&echo 具&&sleep 1
+PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
+clear
+echo -e "\033[34m $(cat $binner/banner) \033[0m"
+if [[ $(which id) ]]; then
+if [[ $(id -u) = "0" ]]; then
+userid="root"
+fi
+elif [[ $EUID = "0" ]]; then
+userid="root"
+fi
+if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
+	clear
+	ywarn "工具不允许在root环境下运行!"
+	sleep $sleeptime
+	exit
+fi
+if [ "$platform" = "aarch64" ] && [[ ! -d "/sdcard/TIK" ]]; then
+mkdir /sdcard/TIK
+fi
+yecho "开始配置环境..."
+sleep $sleeptime
+yecho "更换国内清华源..."
+if [ "$platform" = "aarch64" ];then
+	mv /etc/apt/sources.list /etc/apt/sources.list.bak
+	echo -e "deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ focal main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ focal-updates main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ focal-backports main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ focal-security main restricted universe multiverse" >> /etc/apt/sources.list
+else
+	${su} cp /etc/apt/sources.list /etc/apt/sources.list.bak
+	${su} sed -i 's/archive.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
+	${su} sed -i 's/security.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
+fi
+yecho "正在更新软件列表..."
+${su} apt-get update && ${su} apt-get upgrade -y >/dev/null
+yecho "正在安装必备软件包..."
+${su} apt-get install python3 python3-pip curl dialog default-jre bc cpio android-sdk-libsparse-utils aria2 openjdk-11-jre p7zip-full -y
+pip3 install pycryptodome -i $PIP_MIRROR
+pip3 install docopt -i $PIP_MIRROR
+pip3 install requests -i $PIP_MIRROR
+${su} apt --fix-broken install
+${su} apt update --fix-missing
+touch $binner/depment
+promenu
+fi
+}
+
+# 项目菜单
+function promenu()
+{
+clear
+cd $LOCALDIR  
+echo -e "\033[31m $(cat $binner/banner) \033[0m"
+echo 
+echo -ne "\033[36m “$shiju”"
+echo -e "\033[36m---$author《$from》\033[0m"
+echo -e " \n"
+echo -e " >\033[33m 项目列表 \033[0m\n"
+echo -e "\033[31m   [d]  删除项目\033[0m\n"
+echo -e "   [0]  新建项目\n"
+pro=0
+if ls TI_* >/dev/null 2>&1;then
+	for pros in $(ls -d TI_*/| sed 's/\///g')
+	do 
+	if [ -d "./$pros" ];then
+	pro=$((pro+1))
+	echo -e "   [$pro]  $pros\n"
+	eval "pro$pro=$pros" 
+	fi
+	done
+fi
+echo -e "  --------------------------------------"
+echo -e "\033[33m  [j] 解压  [x] 下载  [e] 退出  [s] 设置 \033[0m"
+echo -e ""
+echo -e " \n"
+read -p "  请输入序号：" op_pro
+if [ "$op_pro" == "j" ]; then
+	unfilep
+elif [ "$op_pro" == "x" ]; then
+	xiazai
+elif [ "$op_pro" == "d" ]; then
+	read -p "请输入你要删除的项目序号：" deln
+	if ls TI_* >/dev/null 2>&1;then
+		if [ $deln -gt $pro ];then
+			ywarn "请输入正确编号!"
+			sleep $sleeptime
+			promenu
+		else
+			eval "delproject=\$pro$deln"
+			read -p "在回车之前，您可以ctrl+c中断删除" null
+			rm -fr $delproject
+			ysuc "删除成功！"
+			sleep $sleeptime
+			promenu
+		fi
+	else
+		ywarn  "输入有误！"
+		sleep $sleeptime
+		promenu
+	fi
+elif [ "$op_pro" == "0" ]; then
+	newpro
+elif [ "$op_pro" == "e" ]; then
+	if [ "$new" == "1" ]; then
+	touch $binner/sta
+	fi
+	clear
+	echo  
+	echo -n  感&&sleep 0.03&&echo -n 谢&&sleep 0.03&&echo -n 使&&sleep 0.2&&echo -n 用&&sleep 0.03&&echo -n T&&sleep 0.03&&echo -n I&&sleep 0.03&&echo -n K&&sleep 0.03&&echo 全能工具箱！&&sleep 0.03
+	echo -n    如&&sleep 0.03&&echo -n 果&&sleep 0.03&&echo -n 有&&sleep 0.03&&echo -n 能&&sleep 0.03&&echo -n 力&&sleep 0.03&&echo -n ，&&sleep 0.03&&echo -n 希&&sleep 0.03&&echo -n 望&&sleep 0.03&&echo -n 您&&sleep 0.03&&echo -n 能&&sleep 0.03&&echo -n 分&&sleep 0.03&&echo -n 享&&sleep 0.03&&echo -n 并&&sleep 0.03&&echo -n 参&&sleep 0.03&&echo -n 与&&sleep 0.03&&echo -n 完&&sleep 0.03&&echo -n 善&&sleep 0.03&&echo -n 这&&sleep 0.03&&echo -n 个&&sleep 0.03&&echo -n 开&&sleep 0.03&&echo -n 源&&sleep 0.03&&echo -n 项&&sleep 0.03&&echo -n 目&&sleep 0.03&&echo ！&&sleep 2
+	clear
+	exit
+elif [ "$op_pro" == "s" ]; then
+	settings
+elif [[ $op_pro =~ ^-?[1-9][0-9]*$ ]]; then
+	if ls TI_* >/dev/null 2>&1;then
+	
+	if [ $op_pro -gt $pro ];then
+	ywarn "请输入正确编号!"
+	sleep $sleeptime
+	promenu
+	else
+		eval "project=\$pro$op_pro"
+		cd $project
+		menu
+	fi
+	else
+	ywarn "请输入正确编号!"
+	sleep $sleeptime
+	promenu
+	fi
+else
+	ywarn "请输入正确编号!"
+	sleep $sleeptime
+	promenu
+fi
+}
+
+
+# 解压制作
+function unfilep()
+{
+clear
+cd $LOCALDIR
+super=0
+show
+i=$(echo "$i0" | rev | cut -d"/" -f1 | rev)
+if [ "$exit0" == "1" ]; then
+promenu
+else
+read -p "请输入项目名称(非中文,可留空)：" projec
+if test -z "$projec";then
+	sf=$(echo "$i0" | rev | cut -d"/" -f1| cut -d'.' -f1 --complement | rev)
+	project=TI_$sf
+else  
+	project=TI_$projec
+fi
+if [[ -d "$project" ]]; then
+project="$project"-`date "+%Y%m%d%H%M%S"`
+ywarn "项目已存在！自动命名为：$project"
+fi
+echo 创建项目:$project成功！
+mkdir $LOCALDIR/$project
+PROJECT_DIR=$LOCALDIR/$project
+#万能解包
+type1=$(echo "$i" | rev | cut -d"/" -f1| cut -d'.' -f1 | rev)
+cd $LOCALDIR/$project
+if [ "$type1" == "zip" ];then
+yecho "解压刷机包中..."
+7z x "$i0" -o"$LOCALDIR/$project/" > /dev/null
+sleep $sleeptime
+autounpack
+elif [ "$i" == "super.img" ];then
+mv $i0 $PROJECT_DIR&&super=1&&inunpack
+else
+mv $i0 $PROJECT_DIR&&inunpack
+fi
+fi
+
+}
+
+# 新建项目
+function newpro()
+{
+clear
+cd $LOCALDIR
+echo " "
+read -p "请输入项目名称(非中文)：TI_" projec
+if test -z "$projec";then
+  ywarn "请键入！"
+  sleep $sleeptime
+  promenu
+else  
+  project=TI_$projec
+  if [[ -d "$project" ]]; then
+	project="$project"-`date "+%Y%m%d%H%M%S"`
+	ywarn "项目已存在！自动命名为：$project"
+	sleep $sleeptime
+  fi
+  mkdir $project
+  menu
+fi
 }
 
 function zhilian()
 {
 read -p "请输入需要下载ROM的直链：" downrom
 if test -z "$downrom"; then
-  echo "你输了个寂寞"
+  ywarn "请输入!"
   sleep $sleeptime
   xiazai
 else  
-  echo "开始下载啦"
+  zip=$(basename $downrom)
+  yecho "开始下载:$zip"
   sleep $sleeptime
   aria2c -s 9 -x 2 $downrom -d $Sourcedir
-  zip=$(basename $downrom)
-  echo "下载完成！"
+  ysuc "下载完成！"
   sleep $sleeptime
 fi
 }
@@ -371,12 +353,14 @@ fi
 
 function subbed()
 {
+cd $LOCALDIR
 clear
+if [[ ! -d $binner/subs ]]; then
 mkdir $binner/subs
+fi
 clear
 echo  
-echo -e " >\033[31m 插件列表 \033[0m\n"
-echo -e "----------------------------------------------\n"
+echo -e " >\033[31m插件列表 \033[0m\n"
 subn=0
 cd $binner/subs
 for sub in $(ls)
@@ -388,94 +372,63 @@ do
 	fi
 done
 echo -e "----------------------------------------------\n"
-echo -e "\033[33m  > [n] - 安装    [d] - 删除    [e] - 项目菜单\033[0m"
+echo -e "\033[33m> [n]- 安装  [d]- 删除  [e]- 项目菜单\033[0m"
 echo -e ""
-read -p "  请输入序号：" op_pro
+read -p "请输入序号：" op_pro
 if [ "$op_pro" == "n" ]; then
 	subber
 elif [ "$op_pro" == "d" ]; then
 	read -p "请输入你要删除的插件序号：" sub
 	eval "sub=\$sub$subn"
 	#再次确认
+	read -p "在回车之前，您可以ctrl+c中断删除" null
 	rm -fr $sub
-	echo 删除成功！
+	ysuc "删除成功！"
 	sleep $sleeptime
 	subbed
 elif [ "$op_pro" == "e" ]; then
 	menu
 elif [[ $op_pro =~ ^-?[1-9][0-9]*$ ]]; then
 	if ls >/dev/null 2>&1;then
-	if [ $op_pro -gt $subn ];then
-	echo 输入有误！
-	sleep $sleeptime
-	menu
-	else
-	#检验插件完整性
+		if [ $op_pro -gt $subn ];then
+			ywarn "请输入正确编号!"
+			sleep $sleeptime
+			menu
+		else
+		#检验插件完整性
 		eval "sub=\$sub$subn"
 		cd $PROJECT_DIR&&$binner/subs/$sub/run.sh
 		subbed
-	fi
+		fi
 	else
-	echo 输入有误！
-	sleep $sleeptime
-	subbed
+		ywarn "请输入正确编号!"
+		sleep $sleeptime
+		subbed
 	fi
 else
-	echo  输入有误！
+	ywarn "请输入正确编号!"
 	sleep $sleeptime
 	subbed
 fi
-
 }
 
 function subber()
 {
 clear
 cd $LOCALDIR
-subn=0
-Yeliqin "  请将插件放于$Sourcedir下！"
-if ls -d $Sourcedir/*.sub >/dev/null 2>&1;then
-cd $Sourcedir
-	for sub0 in $(ls *.sub)
-	do 
-	if [ -f "$sub0" ]; then
-		sub=$(echo "$sub0" | cut -d'/' -f4)
-		subn=$((subn+1))
-		echo -e "   [$subn]- $sub\n"
-		eval "sub$subn=$sub" 
-	fi
-	done
-cd $LOCALDIR
+exit0=0
+show
+if [ "$exit0" == "1" ]; then
+	subbed
 else
-echo "	没有插件文件！"
-fi
-echo -e "-------------------------------------------------------\n"
-echo -e ""
-read -p "请输入对应序列号：" subd
-if [ "$subd" == "0" ]; then
-	menu
-elif [[ $subd =~ ^-?[1-9][0-9]*$ ]]; then
-if [ $subd -gt $subn ];then
-echo "输入有误！！"
-sleep $sleeptime
-subber
-else
-eval "sub=\$sub$subd"
-zs=$(echo "$sub" | rev | cut -d'.' -f1 --complement | rev)
-mkdir $binner/subs/$zs
-echo "安装中..."
-7z x "$Sourcedir/$sub" -o"$binner/subs/$zs" > /dev/null
-sudo chmod -R 777 $binner/subs/$zs
-echo "安装完成"
-sleep $sleeptime
-subbed
-fi
-elif [ "$zipd" == "h" ]; then
-subbed
-else
-echo "输入有误！！"
-sleep $sleeptime
-subbed
+	zs=$(echo "$i" | rev | cut -d"/" -f1| cut -d'.' -f1 --complement | rev)
+	mkdir $binner/subs/$zs
+	yecho "安装插件[$zs]中..."
+	7z x "$i0" -o"$binner/subs/$zs" > /dev/null
+	${su} chmod -R 777 $binner/subs/$zs
+	echo "安装完成"
+	sleep $sleeptime
+	subbed
 fi
 }
 
@@ -483,17 +436,25 @@ fi
 function packzip()
 {
 clear
-echo -e "\033[33m 	<-打包ZIP \033[0m" 
-Yeliqin "	将会打包TI_out中已有文件"
+echo -e "\033[33m<-打包ZIP \033[0m" 
+echo "将会打包TI_out中已有文件为一个ZIP,非常智障"
 if [[ ! -d "TI_out" ]]; then
-	Yeliqin "	TI_out是空的，爬！"
+	ywarn "TI_out是空的！"
 	sleep $sleeptime
 else
-cd TI_out
-#cp -afrv $afrv/dynamic/* ./ > /dev/null
-#touch 
-Yeliqin "	👴没写好！"
+
+read -p "请输入生成ROM名称(非中文)：" romname
+if test -z "$romname";then
+  ywarn "键入为空！"
+  sleep $sleeptime
+else
+	yecho "正在打包：$romname.zip ..."
+	7za a -tzip -r $PROJECT_DIR/TI_out/$romname.zip $PROJECT_DIR/TI_out/*
+	ysuc "打包完成！"
 fi
+
+fi
+sleep $sleeptime
 menu
 }
 
@@ -502,7 +463,7 @@ function movedir()
 {
 clear
 echo -e "\033[31m<-移动项目文件 \033[0m" 
-Yeliqin "	将会移动本目录下部分文件至/sdcard/$mydir/$project"
+echo "移动本目录下部分文件至/sdcard/$mydir/$project"
 fi=0
 echo -e "   [0]- 返回菜单\n"
 if ls >/dev/null 2>&1;then
@@ -510,50 +471,87 @@ if ls >/dev/null 2>&1;then
 	do 
 	if [ -d "./$fis" ];then
 	fi=$((fi+1))
-	if [ "$fis" == "TI_config" ] || [ "$fis" == "TI_out" ];then
+	if [ "$fis" == "TI_out" ];then
+	echo "   [$fi]- $fis"
+	elif [ -d "$fis" ];then
 	echo -e "\033[31m   [$fi]- $fis\n\033[0m"
 	fi
 	eval "fi$fi=$fis" 
 	fi
 	done
 fi
-echo -e "----------------------------------------------\n"
-read -p "  请输入序号：" op
+echo -e "-------------------------------------------\n"
+read -p "请输入序号：" op
 if [[ $op =~ ^-?[1-9][0-9]*$ ]]; then
 if [ $op -gt $fi ];then
-echo "输入有误！！"
+ywarn "请输入正确编号!"
 sleep $sleeptime
 menu
 else
+
 eval "mof=\$fi$op"
 if [[ ! -d "/sdcard/$mydir/$project" ]]; then
 mkdir /sdcard/$mydir/$project
 fi
-echo 移动中...
+
+yecho "移动$mof中..."
 mv $PROJECT_DIR/$mof /sdcard/$mydir/$project
-read -p "  请自由修改/sdcard/$mydir/$project文件，完成后，回车移回项目文件" null
+read -p "请自由修改/sdcard/$mydir/$project，完成后，回车移回项目文件!" null
+
 mv /sdcard/$mydir/$project/* $PROJECT_DIR
 menu
 fi
+
 else
-echo "输入有误！！"
+
+ywarn "请输入正确编号!"
 sleep $sleeptime
 menu
 fi
-
-
-
 }
 
 
 function miuiupdate()
 {
-echo -e "\033[31m 国际代号说明：[CN]国内版 [ID]印尼版 [RU]俄版 [Global]国际版 [EEA]欧版 [TR]土耳其版  [TW]台湾版 [GP]日本版 [SG]新加坡版 \033[0m" 
-read -p "请输入地区代号：" region
-read -p "请输入机型代号：" mod
-#列出当前机型含有的地区版本
+read -p "请选择地区代号：[1]国内版 [2]印尼版 [3]俄版 [4]国际版 [5]欧版 [6]土耳其版  [7]台湾版 [8]日本版 [9]新加坡版	" op_menu
+case $op_menu in
+        1)
+        region=CN
+        ;;
+		2)
+        region=ID
+        ;;
+		3)
+        region=RU
+        ;;
+		4)
+        region=Global
+        ;;
+		5)
+        region=EEA
+        ;;
+		6)
+		region=TR
+		;;
+		7)
+        region=TW
+        ;;
+		8)
+        region=GP
+        ;;
+		9)
+        region=SG
+        ;;
+        *)
+        region=CN
+		ywarn "默认选择国内版！"
+		sleep $sleeptime
+        menu
+esac
+
+read -p "请输入机型代号：	" mod
 sed -i 's/region = "[^"]*/region = "'$region'/' $binner/get_miui.py
-read -p "请选择类型[1]卡刷包 [2]线刷包：" ver
+read -p "请选择类型[1]卡刷包 [2]线刷包：	" ver
 	case "$ver" in
 	2)
 	  sed -i 's/rom_cleases = "[^"]*/rom_cleases = "fastboot/' $binner/get_miui.py
@@ -561,8 +559,7 @@ read -p "请选择类型[1]卡刷包 [2]线刷包：" ver
     *)
       sed -i 's/rom_cleases = "[^"]*/rom_cleases = "recovery/' $binner/get_miui.py
 	  esac
-echo "[1]开发版 [2]稳定版" 
-read -p "请选择类型：" ver
+read -p "请选择类型[1]开发版 [2]稳定版	" ver
 	case "$ver" in
 	2)
 	  sed -i 's/rom_version = "[^"]*/rom_version = "stable/' $binner/get_miui.py
@@ -572,20 +569,24 @@ read -p "请选择类型：" ver
 	  esac
 miuilink=`python3 $binner/get_miui.py $mod`
 echo $miuilink
-read -p "是否开始下载？[1/0]" ver
+if echo $miuilink | grep "Already" ; then
+	sleep $sleeptime&&sleep $sleeptime&&sleep $sleeptime
+else
+read -p "是否开始下载？[1/0]	" ver
 	case "$ver" in
 	1)
-	echo "开始下载啦"
+	zip=$(basename $miuilink)
+	yecho "开始下载${zip}..."
 	sleep $sleeptime
 	aria2c -s 9 -x 2 $miuilink -d $Sourcedir
-	zip=$(basename $miuilink)
-	echo "下载完成！"
+	ysuc "下载完成！"
 	;;
     *)
 	echo  
 	esac
 sleep $sleeptime
-xiazai
+fi
+promenu
 }
 
 # 下载器
@@ -593,10 +594,9 @@ function xiazai()
 {
 clear
 cd $LOCALDIR
-echo " "
-echo -e "-------------------------------------------------------\n"
-echo -e "\033[33m  > [1] - 返回主页    [2] - 输入直链    [3] - 自动获取MIUI更新地址 \033[0m"
-read -p "	请输入编号: " op_menu
+echo -e "------------------------------------------------\n"
+echo -e "\033[33m> [1]- 返回主页  [2]- 输入直链  [3]- 获取MIUI_ROM \033[0m"
+read -p "请输入编号: " op_menu
 case $op_menu in
         1)
         promenu
@@ -608,85 +608,701 @@ case $op_menu in
         miuiupdate
         ;;
         *)
-#       echo -e "请输入正确编号"
-        echo -e "本功能暂未开发！"
+        ywarn "请输入正确编号！"
 		sleep $sleeptime
         promenu
 esac
 }
 
-# 设置
-function settings()
+function toolupdate()
+{
+ywarn "功能暂未开放！"
+sleep $sleeptime
+settings
+}
+
+
+
+# 打包
+function packmenu()
 {
 clear
-cd $LOCALDIR
-echo -e "\033[33m   >设置 \033[0m"
+cd $LOCALDIR && cd $project
+clear
 echo  
-echo " 	1>修改等待时间 "
-echo " 	2>修改brotli压缩等级"
-echo " 	3>开/关自动补全config"
-echo " 	4>安卓-修改内置存储rom目录"
-echo " 	5>更新工具内部分依赖"
-echo " 	6>返回主页"
-echo 
-read -p "   请输入编号: " op_pro
-if [ "$op_pro" == "1" ]; then
-	settings1
-elif [ "$op_pro" == "2" ]; then
-	settings2
-elif [ "$op_pro" == "3" ]; then
-	settings3
-elif [ "$op_pro" == "4" ]; then
-	settings4
-elif [ "$op_pro" == "4" ]; then
-	toolupdate
-elif [ "$op_pro" == "6" ]; then
-	promenu
+echo -e "\033[33m<-打包菜单 \033[0m" 
+echo "	--------------------------------"
+echo " 	1 > 返回 hom       2 > 打包 Bro " 
+echo " 	3 > 打包 Dat       4 > 打包 Img " 
+echo " 	5 > 打包 Super     6 > 打包 DTBO" 
+echo " 	7 > 打包 DTB	"
+echo " 	--------------------------------" 
+read -p "	请输入编号: " op_menu
+case $op_menu in
+        1)
+        menu
+        ;;
+		2)
+		br=1&&dat=1&&packer
+        ;;
+		3)
+		br=0&&dat=1&&packer
+        ;;
+		4)
+        br=0&&dat=0&&packer
+		packmenu
+		;;
+		5)
+        packsuper
+		packmenu
+		;;		
+		6)
+        packdtbo
+		;;		
+		7)
+        packdtb
+		;;
+        *)
+        ywarn "  请输入正确编号！"
+		sleep $sleeptime
+        packmenu
+esac
+}
+
+# 分解菜单
+function unpmenu()
+{
+clear
+cd $LOCALDIR && cd $project
+echo -e "\033[33m<-分解菜单 \033[0m" 
+echo "  --------------------------------"
+echo "  1 > 返回 hom       2 > 分解 Bro " 
+echo "  3 > 分解 Dat       4 > 分解 Img " 
+echo "  5 > 分解 Bin       6 > 分解 Win "
+echo "  7 > 分解 DTBO      8 > 分解 DTB"
+echo "  9 > 分解 OFP       10> 合并分段dat并分解"
+echo "  11> 分解 Ops       12> 合并分段win并分解"
+echo "  13> 分解 Super "
+echo "  -------------------------------- " 
+super=0
+read -p "  请输入编号: " op_menu
+case $op_menu in
+        1)
+        menu
+        ;;
+		2)
+        type1=br&&unpacker
+        ;;
+		3)
+        type1=dat&&unpacker
+        ;;
+		4)
+        type1=img&&unpacker
+        ;;
+		5)
+        type1=bin&&unpacker
+        ;;
+		6)
+        type1=win&&unpacker
+        ;;
+		7)
+        undtbo
+        ;;
+		8)
+        undtb
+        ;;
+		9)
+        type1=ofp&&unpacker
+        ;;
+		10)
+        type1=dat.1&&unpacker
+        ;;
+		11)
+        type1=ops&&unpacker
+        ;;
+		12)
+        type1=win000&&unpacker
+        ;;
+		13)
+        super=1&&type1=img&&unpacker
+        ;;
+        *)
+        ywarn "请输入正确编号！"
+		sleep $sleeptime
+        unpmenu
+esac
+}
+
+
+# 分解
+function unpacker()
+{
+clear
+cd $LOCALDIR && cd $project
+unpall=0&&unpdelall=0&&checkunp=0
+
+echo -e "\033[33m<-分解$type1 \033[0m" 
+
+if ls *.$type1 >/dev/null 2>&1;then
+	read -p "是否解压所有$type1 [y/n]	" unpall
+	read -p "是否解压后删除所有源文件?[y/n]	" unpdelall
+	
+	ls *.${type1} | while read i; do
+	sf=$(echo "$i" | cut -d"/" -f3| cut -d"." -f1)
+	info=$(file $i)
+	if [ "$unpall" = "y" ];then
+		yecho "解包 $i"
+		rm -fr ./$sf
+		inunpack
+	else
+		read -p "是否解包$i?[y/n]	" checkunp </dev/tty
+		if [ "$checkunp" != "n" ];then
+			yecho "解包 $i"
+			rm -fr ./$sf
+			inunpack
+		fi
+	fi
+	if [ "$unpcheck" = "y" ] || [ "$unpall" = "y" ];then
+		if [ "$unpdelall" = "y" ];then
+			rm -f $i
+		else
+			read -p "是否删除$i?[y/n]	" unpdel </dev/tty
+			if [ "$unpdel" = "y" ];then
+				rm -f $i
+			fi
+		fi
+	fi
+	done
+	
 else
-	echo  输入有误！
+	ywarn "没有${type1}文件！"
 	sleep $sleeptime
-	settings
+fi
+unpmenu
+}
+
+# 打包
+function packer()
+{
+clear
+cd $LOCALDIR && cd $project
+
+if [ "$br" = "1" ];then
+echo -e "\033[33m<-打包Brotli \033[0m" 
+elif [ "$dat" = "1" ];then
+echo -e "\033[33m<-打包Dat \033[0m" 
+else
+echo -e "\033[33m<-打包Img \033[0m" 
+fi
+
+if [[ ! -d "TI_out" ]]; then
+mkdir $PROJECT_DIR/TI_out
+fi
+if ls ./TI_config/*.boot >/dev/null 2>&1;then
+	read -p "是否打包所有启动镜像？ [y/n]	" pacall
+	pacimglist=$(ls ./TI_config/*.boot)
+	ls ./TI_config/*.boot | while read i; do
+	sf=$(echo "$i" | cut -d"/" -f3| cut -d"." -f1)
+	info=$(file $i)
+	rm -rf $AIK/split_img
+	rm -rf $AIK/ramdisk
+	rm -rf $AIK/*.img
+	if [ -e $AIK/ramdisk-new.cpio.gz ]; then
+		rm -rf $AIK/ramdisk-new.cpio.gz
+	fi
+		if [ "$pacall" = "y" ];then
+			yecho "打包 $sf.img"
+			bootpac >/dev/null 2>&1
+		else
+		read -p "是否打包$sf.img?[y/n]	" imgcheck </dev/tty
+			if [ "$imgcheck" != "n" ];then
+				yecho "打包 $sf.img"
+				bootpac >/dev/null 2>&1
+			fi
+		fi
+	done
+fi
+if ls ./TI_config/*_fs_config >/dev/null 2>&1;then
+	read -p "是否打包所有系统镜像？ [y/n]	" pacall
+	
+	read -p "打包文件系统: [1]ext4 [2]erofs+lz4 [2]erofs	" syscheck
+	
+	ls ./TI_config/*_fs_config | while read i; do
+	sf=$(echo "$i" | cut -d"/" -f3 | rev | cut -d'_' -f1 --complement | cut -d'_' -f1 --complement | rev)
+	if [ "$pacall" = "y" ];then
+		yecho "打包 $sf"
+		rm -f ${sf}.img > /dev/null
+		rm -f ${sf}.s.img > /dev/null
+		inpacker $sf >/dev/null 2>&1
+	else
+		read -p "是否打包$sf?[y/n]	" imgcheck </dev/tty
+		if [ "$imgcheck" != "n" ];then
+			yecho "打包 ${sf}..."
+			rm -f ${sf}.img > /dev/null
+			inpacker $sf >/dev/null 2>&1
+		fi
+	fi
+	done
+else
+ywarn "没有可打包文件！"
+fi
+packmenu
+}
+
+inpacker(){
+	#基本参数
+	name=${1}
+	mount_path="/$name"
+	#if [ "$name" == "system" ];then mount_path="/" ;fi
+	file_contexts="${PROJECT_DIR}/TI_config/${name}_file_contexts"
+	fs_config="${PROJECT_DIR}/TI_config/${name}_fs_config"
+	UTC=$(date -u +%s)
+	BLOCKSIZE=4096
+	out_img="${PROJECT_DIR}/TI_out/${name}.img"
+	in_files="${PROJECT_DIR}/${name}"
+	#分区大小处理
+	zj=`du -sb $name | awk {'print $1'}`
+	if [ $zj -gt 10000000 ] ; then
+		img_size0=`echo "$zj * 1.0758" |bc`
+	else
+		img_size0=`echo "$zj * 1.2" |bc`  
+	fi
+	img_size=`echo $img_size0|sed 's/\..*//g'`
+	size=`echo "$img_size0 / $BLOCKSIZE" |bc`
+	echo $img_size >$PROJECT_DIR/TI_config/${name}_size.txt
+	if [[ -f "dynamic_partitions_op_list" ]]; then
+	sed -i "s/resize ${name}\s.*/resize ${name} $img_size/" $PROJECT_DIR/dynamic_partitions_op_list
+	fi
+	
+	${su} python3 $binner/fs.py $in_files ${fs_config}_ ${PROJECT_DIR} $name
+	
+	if [ "$syscheck" = "2" ];then
+	${su} $ebinner/mkfs.erofs -zlz4hc --mount-point $mount_path --fs-config-file $fs_config --file-contexts $file_contexts $out_img $in_files > /dev/null
+	elif [ "$syscheck" = "3" ];then
+	${su} $ebinner/mkfs.erofs --mount-point $mount_path --fs-config-file $fs_config --file-contexts $file_contexts $out_img $in_files > /dev/null
+	else
+	MKE2FS_CONFIG=$binner/mke2fs.conf E2FSPROGS_FAKE_TIME=1230768000 $ebinner/mke2fs -O ^has_journal -L $name -I 256 -M $mount_path -m 0 -t ext4 -b $BLOCKSIZE $out_img $size > /dev/null
+    ${su} $ebinner/e2fsdroid -e -T $UTC -C $fs_config -S $file_contexts -f $in_files -a $mount_path $out_img
+	fi
+	if [ "$dat" = "1" ];then
+		$ebinner/img2simg ./TI_out/${name}.img $PROJECT_DIR/TI_out/${name}.s.img > /dev/null
+		rm -rf $PROJECT_DIR/TI_out/${name}.img > /dev/null
+		python3 $binner/img2sdat/img2sdat.py $PROJECT_DIR/TI_out/${name}.s.img -o $PROJECT_DIR/TI_out/ -v 4 -p ${name} > /dev/null
+		rm -rf $PROJECT_DIR/TI_out/${name}.s.img > /dev/null
+	fi
+	if [ "$br" = "1" ];then
+		$ebinner/brotli -q $brcom $PROJECT_DIR/TI_out/${name}.new.dat -o $PROJECT_DIR/TI_out/${name}.new.dat.br > /dev/null
+		rm -rf $PROJECT_DIR/TI_out/${name}.new.dat > /dev/null
+	fi
+}
+
+
+function undtbo()
+{
+cd $LOCALDIR && cd $project
+echo -e "\033[33m <-分解DTBO \033[0m" 
+rm -rf $dtbodir
+if [ -f "./dtbo.img" ];then
+ filedtbo="dtbo.img"
+elif [ -f "./firmware-update/dtbo.img" ];then
+ filedtbo="firmware-update/dtbo.img"
+else
+  ywarn "dtbo.img不存在！"
+  sleep $sleeptime
+  unpmenu
+fi
+dtc="$binner/dtb_tools/dtc"
+mkdtimg_tool="$binner/dtb_tools/mkdtboimg.py"
+dtbodir="./dtbo"
+mkdir -p $dtbodir/dtbo_files
+mkdir -p $dtbodir/dts_files
+yecho "正在解压dtbo.img"
+python3 $mkdtimg_tool dump "./$filedtbo" -b "$dtbodir/dtbo_files/dtbo" > $dtbodir/dtbo_imageinfo.txt
+
+dtbo_files_name=$(ls $dtbodir/dtbo_files)
+for dtbo_files in $dtbo_files_name ;do
+  dts_files=$(echo "$dtbo_files" | sed 's/dtbo/dts/g')
+  yecho "正在反编译$dtbo_files为$dts_files"
+  $dtc -@ -I "dtb" -O "dts" "$dtbodir/dtbo_files/$dtbo_files" -o "$dtbodir/dts_files/$dts_files" > /dev/null 2>&1
+  [ $? != 0 ] && ywarn "反编译$dtbo_files失败" && unpmenu
+done
+ysuc "解压完成!"
+chmod 777 -R $dtbodir
+unpmenu
+}
+
+
+function makedtbo()
+{
+cd $LOCALDIR && cd $project
+echo -e "\033[33m <-打包DTBO \033[0m" 
+
+rm -rf $dtbodir
+dtc="$binner/dtb_tools/dtc"
+mkdtimg_tool="$binner/dtb_tools/mkdtboimg.py"
+dtbodir="$PROJECT_DIR/dtbo"
+
+rm -rf $dtbodir/new_dtbo_files
+mkdir -p $dtbodir/new_dtbo_files
+
+dts_files_name=$(ls $dtbodir/dts_files)
+
+for dts_files in $dts_files_name ;do
+  new_dtbo_files=$(echo "$dts_files" | sed 's/dts/dtbo/g')
+  yecho "正在回编译$dts_files为$new_dtbo_files"
+  $dtc -@ -I "dts" -O "dtb" "$dtbodir/dts_files/$dts_files" -o "$dtbodir/new_dtbo_files/$new_dtbo_files" > /dev/null 2>&1
+done
+
+file_number=$(ls -l $dtbodir/new_dtbo_files | grep "^-" | wc -l)
+echo "当前dtbo文件个数为：$file_number "
+yecho "正在生成dtbo.img..."
+$mkdtimg_tool create "$PROJECT_DIR/TI_out/dtbo.img" --page_size="4096" $dtbodir/new_dtbo_files/*
+if [ $? = 0 ];then
+  ysuc "生成完毕!"
+  chmod 777 -R $dtbodir
+else
+  ywarn "dtbo.img 生成失败!"
+fi
+unpmenu
+}
+
+
+function bootpac()
+{
+yecho "正在生成$sf.img..."
+cp -afrv $PROJECT_DIR/$sf/* $AIK > /dev/null
+$AIK/repackimg.sh --forceelf > /dev/null
+if [ -e $AIK/unpadded-new.img ];then
+  mv $AIK/unpadded-new.img $PROJECT_DIR/exaid/
+fi
+mv $AIK/image-new.img $AIK/$sf.img
+mv $AIK/$sf.img $PROJECT_DIR/TI_out/
+rm -rf $AIK/split_img
+rm -rf $AIK/ramdisk
+if [ -e $AIK/ramdisk-new.cpio.gz ]; then
+  rm -rf $AIK/ramdisk-new.cpio.gz
+fi
+sleep $sleeptime
+}
+
+
+function imgextra()
+{
+if [ "$super" == "1" ];then
+	lpunpack="$ebinner/lpunpack"
+	if (file ./$sf.img | grep -qo "sparse") ;then
+		yecho "当前super.img转换为rimg中..."
+		$ebinner/simg2img $PROJECT_DIR/$sf.img $PROJECT_DIR/${sf}r.img
+		rm -rf ./$sf.img
+		mv $PROJECT_DIR/${sf}r.img $PROJECT_DIR/${sf}.img
+	fi
+	super_size=$(du -sb "./${sf}.img" | awk '{print $1}' | bc -q)
+	yecho "super分区大小: $super_size bytes  解压${sf}.img中..."
+	mkdir super_${sf}
+	TARGETDIR=./super_${sf}
+	$lpunpack $PROJECT_DIR/${sf}.img $TARGETDIR
+	cat supersize=$super_size > $procon
+	if [ $? != "0" ];then
+		ywarn "解压失败"
+	else
+		ysuc "super输出至 $TARGETDIR"
+	fi
+	touch ./TI_config/super_${sf}
+	chmod 777 -R $TARGETDIR
+elif echo $info | grep "ext2" > /dev/null 2>&1; then
+	${su} python3 $binner/imgextractor.py $PROJECT_DIR/$sf.img ./ > /dev/null
+elif echo $info | grep "sparse" > /dev/null 2>&1; then
+	${su} python3 $binner/imgextractor.py $PROJECT_DIR/$sf.img ./ > /dev/null
+	rm -rf ./$sf.raw.img
+elif echo $info | grep "bootimg" > /dev/null 2>&1 || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ] ; then
+	${su} mkdir $sf
+	${su} $AIK/unpackimg.sh $PROJECT_DIR/$i ./ > /dev/null
+	${su} mv $AIK/ramdisk $PROJECT_DIR/$sf&&mv $AIK/split_img $PROJECT_DIR/$sf
+	chmod 777 -R ./$sf/
+	touch $PROJECT_DIR/TI_config/$i.boot
+else
+	ywarn "正在尝试使用erofs解压"
+	$ebinner/erofsUnpackKt $i ./
+	if ! $ebinner/erofsUnpackKt $i ./ 2&>/dev/null ;then
+		ywarn "$i解压失败！"
+	fi
+	mv ./config/* ./TI_config&&rm -fr ./config
 fi
 }
 
-function settings1()
+
+function undtb()
 {
-echo 调整部分命令输出后的等待时间，当前为：$sleeptime秒
-read -p "	请输入（非负数）: " sleeptime
-sed -i 's/^sleeptime=.*/sleeptime='$sleeptime'/'  $binner/settings
-source $binner/settings
-settings
-}
-function settings2()
-{
-echo 调整brotli压缩等级（整数1-9，级别越高，压缩率越大，耗时越长），当前为：$brcom级
-read -p "	请输入（1-9）: " brcom
-sed -i 's/^brcom=.*/brcom='$brcom'/'  $binner/settings
-source $binner/settings
-settings
-}
-function settings3()
-{
-echo 自动补全config以确保权限正常，但耗时较长。关闭后，您新增的文件无法确保权限正常。
-read -p "	请输入[1/0]: " configcompl
-sed -i 's/^configcompl=.*/configcompl='$configcompl'/'  $binner/settings
-source $binner/settings
-settings
-}
-function settings4()
-{
-echo 修改安卓端在内置存储识别ROM的路径。当前为/sdcard/$mydir
-read -p "	请输入文件夹名称(英文): " mydir
-sed -i 's/^mydir=.*/mydir='$mydir'/'  $binner/settings
-source $binner/settings
-settings
+cd $LOCALDIR && cd $project
+echo -e "\033[33m<-分解DTB \033[0m" 
+rm -rf $dtbdir
+if [ ! -e ./dtb ];then
+  ywarn " dtb文件不存在！它或许存在于boot或者vendor_boot中，请解包后移至项目根目录"
+  sleep $sleeptime
+  unpmenu
+fi
+dtc="$binner/dtb_tools/dtc"
+dtbdir="$PROJECT_DIR/dtbs"
+mkdir $dtbdir
+mkdir -p $dtbdir/dts_files
+
+yecho "正在反编译dtb"
+$dtc -@ -I "dtb" -O "dts" "./dtb" -o "$dtbdir/dts_files/dts" > /dev/null 2>&1
+[ $? != 0 ] && ywarn "反编译dtb失败" && unpmenu
+ysuc "反编译完成!"
+sleep $sleeptime
+chmod 777 -R $dtbdir
+unpmenu
 }
 
-function toolupdate()
+
+function makedtb()
 {
-echo   暂未开发！
+cd $LOCALDIR && cd $project
+echo -e "\033[33m<-打包DTB \033[0m" 
+
+dtc="$binner/dtb_tools/dtc"
+dtbdir="$PROJECT_DIR/dtbs"
+
+rm -rf $dtbdir/new_dtb_files
+mkdir -p $dtbdir/new_dtb_files
+
+dts_files_name=$(ls $dtbdir/dts_files)
+for dts_files in $dts_files_name ;do
+  new_dtb_files=$(echo "$dts_files" | sed 's/dts/dtb/g')
+  yecho "正在回编译$dts_files为$new_dtb_files"
+  $dtc -@ -I "dts" -O "dtb" "$dtbdir/dts_files/$dts_files" -o "$dtbdir/new_dtb_files/$new_dtb_files" > /dev/null 2>&1
+  [ $? != 0 ] && ywarn "回编译dtb失败" && unpmenu
+done
+find $dtbdir/new_dtb_files -name "dtb*" -exec cat {} > $PROJECT_DIR/TI_out/dtb \;
+ysuc "回编译完成！"
 sleep $sleeptime
-settings
+chmod 777 -R $dtbdir
+unpmenu
+}
+
+
+function vabpack()
+{
+clear
+echo "请将需要动态分区镜像放置于$PROJECT_DIR/super中！"
+type1=VAB
+yecho "【FlashImageTools】正在生成线刷工具"
+${su} cp -r $binner/FlashImageTools $PROJECT_DIR
+read -p "请输入super分区大小（字节数，常见9126805504）	" supersize
+insuper $PROJECT_DIR/TI_out super
+ysuc "生成完毕于$PROJECT_DIR/FlashImageTools！"
+sleep $sleeptime
+menu
+}
+
+function packsuper()
+{
+clear
+ywarn "请将需要打包的分区镜像放置于$PROJECT_DIR/super中！"
+read -p "请输入打包模式：[1]A_only [2]AB [3]V-AB	" typee
+if [ "$typee" = "3" ];then
+type1=VAB
+elif [ "$typee" = "2" ];then
+type1=AB
+else
+type1=A_only
+fi
+read -p "是否打包为sparse镜像？[1/0]	" sparse
+read -p "请输入super分区大小（字节数，常见9126805504）	" supersize
+read -p "请输入输出镜像名:	" supername
+insuper $PROJECT_DIR/super $supername
+packmenu
+}
+
+
+function inunpack()
+{
+	if [[ ! -d "TI_config" ]]; then
+	mkdir $PROJECT_DIR/TI_config
+	fi
+	file=${i}
+	if [ "$type1" = "br" ];then
+		rm -f $sf.new.dat $sf.img
+		$ebinner/brotli -d $PROJECT_DIR/$file > /dev/null
+		python3 $binner/sdat2img.py $sf.transfer.list $sf.new.dat $PROJECT_DIR/$sf.img > /dev/null
+		info=$(file $sf.img)
+		imgextra
+	elif [ "$type1" = "dat" ];then
+		rm -f $sf.img
+		python3 $binner/sdat2img.py $sf.transfer.list $sf.new.dat $PROJECT_DIR/$sf.img > /dev/null
+		info=$(file $sf.img)
+		imgextra
+	elif [ "$type1" = "img" ];then
+		imgextra
+	elif [ "$type1" = "ofp" ];then
+		read -p " ROM机型处理器为？?[1]高通 [2]MTK	" ofpm
+		if [ "$ofpm" = "2" ];then
+			python3 $binner/oppo_decrypt/ofp_mtk_decrypt.py $PROJECT_DIR/$file $PROJECT_DIR/$sf
+		else
+			python3 $binner/oppo_decrypt/ofp_qc_decrypt.py $PROJECT_DIR/$file $PROJECT_DIR/$sf
+		fi
+	elif [ "$type1" = "ops" ];then
+		python3 $binner/oppo_decrypt/ofp_mtk_decrypt.py $PROJECT_DIR/$file $PROJECT_DIR/$sf
+	elif [ "$type1" = "bin" ];then
+		yecho "$file所含分区列表："
+		$ebinner/payload-dumper-go -l $PROJECT_DIR/$file
+		read -p "请输入需要解压的分区名(空格隔开)/all	" extp </dev/tty
+		if [ "$extp" = "all" ];then 
+			$ebinner/payload-dumper-go $PROJECT_DIR/$file -o $PROJECT_DIR/payload
+		else
+			for d in $extp
+			do
+				$ebinner/payload-dumper-go -p $d $PROJECT_DIR/$file -o $PROJECT_DIR/payload > /dev/null 2>&1
+			done
+		fi
+	elif [ "$type1" = "win000" ];then
+		${su} cat ./${sf}.win00{1..9} 2>/dev/null >> ./${sf}.win
+		${su} python3 $binner/imgextractor.py ./${sf}.win ./
+	elif [ "$type1" = "win" ];then
+		${su} python3 $binner/imgextractor.py ./${sf}.win ./
+	elif [ "$type1" = "dat.1" ];then
+		${su} cat ./${sf}.new.dat.{1..999} 2>/dev/null >> ./${sf}.new.dat > /dev/null 2>&1
+		python3 $binner/sdat2img.py $sf.transfer.list $sf.new.dat ./$sf.img
+		imgextra
+	else
+		ywarn "未知格式！"
+	fi
+}
+
+
+# 自动解压
+function autounpack()
+{
+mkdir TI_config
+yecho "自动解包阶段开始，将自动删除源文件！"
+# payload.bin解包
+if [ -f "./payload.bin" ]; then
+	yecho "解压 payload.bin..."
+	$ebinner/payload-dumper-go ./payload.bin -o ./payload
+	yecho "payload.bin解包完成！"
+	sleep $sleeptime
+	rm -rf payload.bin
+	menu
+else
+# 解压br文件
+if ls *.br >/dev/null 2>&1;then
+	ls *.new.dat.br | while read b; do
+		sf=$(echo "$b" | cut -d"/" -f3| cut -d"." -f1)
+		yecho "解包$sf..."
+		${su} $ebinner/brotli -d ${b} > /dev/null 2>&1
+		rm -rf $sf.new.dat.br
+		${su} python3 $binner/sdat2img.py ${sf}.transfer.list ${sf}.new.dat ./${sf}.img > /dev/null 2>&1
+		rm -rf ./${sf}.new.dat && rm -rf ./${sf}.patch.dat && rm -rf ./${sf}.transfer.list > /dev/null 2>&1
+		info=$(file $sf.img)
+		i=$sf.img
+		imgextra
+		rm -rf ./${sf}.img
+		echo 
+	done
+fi
+
+# 合并分段dat
+if ls *.dat.1 >/dev/null 2>&1;then
+	ls *.new.dat.1 | while read t; do
+		th=$(echo "$t" | cut -d"/" -f3| cut -d"." -f1)
+		yecho "合并$th.new.dat..."
+		${su} cat ./${th}.new.dat.{1..999} 2>/dev/null >> ./${th}.new.dat > /dev/null 2>&1
+		rm -rf ./${th}.new.dat.{1..999}
+	done
+fi
+
+# 解压dat
+if ls *.dat >/dev/null 2>&1;then
+	ls *.new.dat | while read d; do
+		sf=$(echo "$d" | cut -d"/" -f3| cut -d"." -f1)
+		yecho "解包$sf..."
+		${su} python3 $binner/sdat2img.py ${sf}.transfer.list ${sf}.new.dat ./${sf}.img > /dev/null 2>&1
+		rm -rf ./${sf}.new.dat && rm -rf ./${sf}.patch.dat && rm -rf ./${sf}.transfer.list > /dev/null 2>&1
+		info=$(file $sf.img)
+		i=$sf.img
+		imgextra
+	done
+fi
+
+# 解压img
+if ls *.img >/dev/null 2>&1;then
+	ls *.img | while read i; do
+		info=$(file $i)
+		sf=$(echo "$i" | cut -d"/" -f3| cut -d"." -f1)
+		yecho "解包$i..."
+		imgextra
+	done
+fi
+
+# TWRP备份文件
+if ls *.win000 >/dev/null 2>&1;then
+	ls *.win000 | while read b; do
+		bh=$(echo "$b" | cut -d"/" -f3| cut -d"." -f1)
+		yecho "合并 $bh备份文件..."
+		${su} cat ./${bh}.win{1..999} 2>/dev/null >> ./${bh}.win
+		rm -rf ./${bh}.win00{0..9}
+		sleep $sleeptime
+	done
+fi
+if ls *.win >/dev/null 2>&1;then
+	ls *.win | while read b; do
+		bh=$(echo "$b" | cut -d"/" -f3| cut -d"." -f1)
+		yecho "解压 $bh备份文件..."
+		${su} python3 $binner/imgextractor.py ./${bh}.win ./
+		rm -rf ./${bh}.win
+		sleep $sleeptime
+	done
+fi
+fi
+menu
+}
+
+
+# 打包Super
+function insuper()
+{
+Imgdir=$1
+Supername=$2
+group_size=0
+
+find $Imgdir -name "*" -type f -size 0c | xargs -n 1 rm -f
+
+superpa="--metadata-size 65536 --super-name super "
+if [ "$sparse" = "1" ];then
+superpa+="--sparse "
+fi
+
+if [ "$type1" = "VAB" ];then
+superpa+=" --virtual-ab "
+fi
+
+superpa+=" --metadata-slots 2 "
+  
+superpa+="--device super:$supersize "
+
+
+for imag in $(ls $Imgdir/*.img);do 
+	image=$(echo "$imag" | rev | cut -d"/" -f1 | rev | sed 's/.img//g' | sed 's/_a//g' | sed 's/_b//g')
+	mv $imag $Imgdir/$image.img > /dev/null 2>&1
+	img_size=$(wc -c <$Imgdir/$image.img)
+	imgName=$(basename $Imgdir/$image.img)
+	item_partition=${image}
+	group_size=`expr ${img_size} + ${group_size}`
+if [ "$type1" = "VAB" ] || [ "$type1" = "AB" ];then
+superpa+="--partition "$image"_a:readonly:$img_size:main --image "$image"_a=$Imgdir/$image.img --partition "$image"_b:readonly:0:main "
+else
+superpa+="--partition "$image":readonly:$img_size:main --image "$image"=$Imgdir/$image.img "
+fi
+done
+superpa+=" --group main:$group_size "
+superpa+="-F --output $PROJECT_DIR/TI_out/$Supername.img"
+if ( $ebinner/lpmake $superpa 2>&1 );then
+    ysuc "成功创建$Supername.img!"
+else
+    ywarn "创建super.img失败！"
+fi
+sleep $sleeptime
 }
 
 

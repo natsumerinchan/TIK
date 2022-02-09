@@ -1,92 +1,61 @@
 
 #  **TI Kitchen** 
-v2.3更新
+v2正式版更新
 
 ①修正大量bug，完善aarch64端支持
 
-②界面微调
+②界面重写，增加项目处理
 
-③更换清华源，加快配置速度
+③重写erofs相关，重写V-AB相关
 
-④添加项目迁移功能（aarch64）
+④添加即点即解，修正项目结构
 
-v2.3更新
+⑤丢弃了对安卓10以下设备打包的支持
 
-①完美同步proot/chroot环境下aarch64的支持（即手机版）
-
-②安卓端支持分解V-AB的payload以及erofs，header3的boot了
-
-③安卓端支持访问内置存储了，支持自定义获取ROM目录
-
-④优化启动，解包，打包速度，在电脑端效果明显
-
- 加入设置功能，自由调整压缩等级 等待时间等
- 
-⑤加入ROM信息预览条，可设置关闭
-
-⑥补全支持安卓8及以下的ROM分解！
-
-⑦加入自动补全fs_config，保证权限完整
-
-v2.2更新
-
-①MIUI更新地址一键获取（可选开发-稳定/机型/线刷-卡刷包/国内-波兰-国际...等等）
-
-②全面支持安卓12解/打包
-
-③修复部分逻辑错误，优化代码可读性
-
-④完善下载模块，修复boot解包等
-
-⑤新增分解dtbo，dtb，ofp，twrp的ext4备份文件（ozip，ops下次加上）
-
-⑥支持解某些奇怪的分区（正在扩展）
-
-⑦MIUI一键官改模块开始构建，欢迎各机型基友加入
 
 ####  **介绍** 
 
 
 1.  【 **TI Kitchen** 】 永久开源的ROM工具箱，支持安卓全版本
 
-2.  支持【 *.zip, *.br, *.dat, *.dat.1~20, ext4/2 *.img, payload.bin, *.win000-004 ，*.ops，dtbo，dtb，*.ozip】格式分解
+2.  支持【 *.zip, *.br, super ,*.dat, *.dat.1~20, ext4/2 *.img, payload.bin, *.win000-004 ，*.ops，dtbo，dtb，*.ofp,*.ozip】格式分解
 
-3.  支持安卓≤12解包打包【包括动态分区】，安卓 [5.0~8.1] 使用[ make_ext4fs ]打包 ，安卓 [9.0+] 使用[ mke2fs+e2fsdroid ]打包
+3.  支持安卓全版本解包，10~12打包【包括动态分区】，使用[ mke2fs+e2fsdroid ]
 
 4.  支持V-AB的payload，header3，erofs解、打包
-    - 测试包小米CIVI MIX4 K30Pro：[ _miui_LMI_21.11.3_d6464f494e_11.0.zip_ ](https://bigota.d.miui.com/21.11.3/miui_LMI_21.11.3_d6464f494e_11.0.zip)
 
-5.  支持合并分段*.dat.*，最大支持20个(1～20 看了几个vivo rom，通常为15个分段文件，多了影响解包速度)
-    - 测试包vivo Y9s：[ _PD1945_A_1.10.7-update-full_1589940104.zip_ ](http://sysupwrdl.vivo.com.cn/upgrade/official/officialFiles/PD1945_A_1.10.7-update-full_1589940104.zip)
+5.  支持合并分段*.dat.*，分段img
 
-6.  支持分解payload.bin
-
+6.  支持分解payload.bin，合成payload.bin功能已完成，但需测试签名，暂不放出（预计全网首发，感谢@秋水）
+	ps.这里提醒一下各位开发者，不签名的payload.bin没有任何意义的，只能使用某些个人适配的TWRP刷入（一般是自动重新解包为img）
+	
 7.  支持分解TWRP备份文件（data除外），最大支持4个( _*.win000~004_ )   ----2020.11.24
 
-8.  支持分解绿厂的ozip,ops,ofp等[ozip支持取消了，下版补回]
+8.  支持分解绿厂的ops,ofp等
 
 9.  加入AIK(Android-Image-Kitchen)分解合成[boot|exaid|recovery/etc].img, 已经补全手机端支持
 
-10.  支持分解全版本super.img(V-AB)，测试-叶利钦的米板5
+10.  支持分解全版本super.img(V-AB)支持各种类型打包（半自动识别，高效稳定）
 
-11.  修复部分动态分区size识别不准确问题！感谢 多幸运i 大佬 
+11.  修复部分动态分区size识别不准确问题，
 
 
 ####  **软件架构  同时支持** 
 
 1. 手机 Termux Proot Ubuntu 20.04及以上版本 Arm64[aarch64] 或者 <Linux Deploy> Chroot Ubuntu 20.04及以上版本 Arm64[aarch64] 【推荐chroot，效率更高】
 
-2. 电脑 Win10 Wsl/Wsl2 Ubuntu 20.04及以上版本 x86_64[x64]  没有用到mount,不强制要求wsl2
+2. 电脑 Win10 Wsl/Wsl2 Ubuntu 20.04及以上版本 x86_64[x64]  没有用到mount,不强制要求wsl2，推荐wsl1!
 
-3. 虚拟机或实体机 Ubuntu 20.04及以上版本 x86_64[x64]  推荐！！！
+3. 虚拟机或实体机 Ubuntu 20.04及以上版本 x86_64[x64]  推荐！！！不推荐deepin等定制化OS，兼容性差！
 
 
 ####  **安装教程** 
+
 1----手机运行Termux 获取存储权限 
 
     termux-setup-storage
 
-2----一键安装ubuntu 
+2----一键安装ubuntu（自动配置proot并clone工具,当然您也可以自行配置chroot甚至是ubuntu-touch）
 
 	bash <(curl -s https://gitee.com/yeliqin666/proot-ubuntu/raw/master/onekey_install.sh)
 
@@ -100,39 +69,50 @@ v2.2更新
 
 3.  手机端termux proot ubuntu下工具目录： 【**/data/data/com.termux/files/home/ubuntu/root/TIK** 】
 
-4.  **请勿删除【工程目录/TI_config文件夹】，打包时所需的文件信息都在此处，若你想修改打包img大小，可以打开 【工程目录/configs/*_size.txt】把里面数值改成你想要的大小，该数值必须是字节大小**，动态分区打包超出大小可以同时修改【工程目录/configs/*_size.txt】和【dynamic_partitions_op_list】 中例如【resize vendor ~2016763904~】 默认工具会自动帮您修改！
+4.  **请勿删除【工程目录/TI_config文件夹】，打包时所需的文件信息都在此处，默认工具会自动帮您修改大小，适配动态分区！！！
 
-5.  由于手机性能、proot效率以及工具工作方式( **比如每次打包img前都要自动比对获取新增文件的fs_config，不会立刻询问是否打包** )等原因，保持耐心，等待片刻即可
+5.  由于手机性能、proot效率以及工具工作方式( **比如每次打包img前都要自动比对获取新增文件的fs_config，不会立刻询问是否打包** )等原因，保持耐心，等待片刻即可；感谢@hais，使得新版速度大大加快
 
-6.  删除文件尽量在【Termux或proot ubuntu】执行 【rm -rf 文件、文件夹】 【 **不要使用系统root功能，除非你记得chmod 777** 】
+6.  删除文件尽量在【Termux或proot ubuntu】执行 【rm -rf 文件、文件夹】 【 **不要使用系统root功能，除非你记得chmod 777 ** 】
 
 7.   **不要放在含有中文名文件夹下运行，不要选择带有空格的文件进行解包，工程文件夹不得有空格或其他特殊符号 ！！！** 
 
-8.  更新说明:删除 TIK 后，从下载工具那一步重来[工具很快就会加入内置更新功能！]
-
-9.   **动态分区必须打包成原官方卡刷包格式[zip]（即打包成.new.dat.br或.new.dat，同时必须使用工程文件夹下的dynamic_partitions_op_list，一块压缩成zip卡刷包），不允许单刷.img** 
+8.   **动态分区必须打包成原官方卡刷包格式[zip]（即打包成.new.dat.br或.new.dat，同时必须使用工程文件夹下的dynamic_partitions_op_list，一块压缩成zip卡刷包），不允许单刷.img** 
 
 10.  手机上使用工具时如果使用 **系统ROOT** 对工程目录下进行了操作(比如： **添加文件，修改文件**等。。。 )，请记得给操作过的文件或文件夹  **777**  满权！！！
 
 ####  **参与贡献** 
 
-特别感谢 @闲出屁的imagine @多幸运i
-
 Credit:
-1.  aarch64 [mke2fs & e2fsdroid from 小新大大](https://github.com/xiaoxindada/SGSI-build-tool)
+1.  mke2fs & e2fsdroid [aarch64 from @多幸运](http://www.coolapk.com/u/8160711)
 2.  x86_64 [mke2fs & e2fsdroid from Erfan Abdi](https://github.com/erfanoabdi/ErfanGSIs)
-3.  osm0sis @ Github: [Android-Image-Kitchen](https://github.com/osm0sis/Android-Image-Kitchen)
-4.  ~xiliuya @ Github: [termux-linux](https://github.com/xiliuya/termux-linux)~
-
-5.  xpirt   @ Github: [sdat2img.py](https://github.com/xpirt/sdat2img) & [img2sdat.py](https://github.com/xpirt/img2sdat)
-6.  Cubi    @ Github: [ext4.py](https://github.com/cubinator/ext4)
-7.  Gregory @ Github: [extract_android_ota_payload.py & update_metadata_pb2.py](https://github.com/cyxx/extract_android_ota_payload)
-8.  Sergey  @ Github (unix3dgforce@MiuiPro.by DEV Team): [BatchApkTool UnpackerFirmware](https://github.com/unix3dgforce) & [lpunpack.py](https://github.com/unix3dgforce/lpunpack)
+3.  Android-Image-Kitchen(modified by @yeliqin666): [osm0sis @ Github](https://github.com/osm0sis/Android-Image-Kitchen)
+4.  termux-linux: [~xiliuya @ Github](https://github.com/xiliuya/termux-linux)~
+5.  sdat2img.py: [xpirt   @ Github](https://github.com/xpirt/sdat2img) & [img2sdat.py](https://github.com/xpirt/img2sdat)
+6.  ext4.py: [Cubi    @ Github](https://github.com/cubinator/ext4)
+7.  payload-dumper-go(modified by @yeliqin666): [ssut @ Github](https://github.com/ssut/payload-dumper-go)
+8.  dtb_tools [from 小新大大 and 黑风](https://github.com/xiaoxindada/SGSI-build-tool)(http://www.coolapk.com/u/3473348)
+9.  FlashImageTools [from @hais](http://z.hais.pw/)
+10. oppo_decrypt [from bkerler @github](https://github.com/bkerler/oppo_decrypt)
+11. get_miui.py  [from 闲出屁的imagine @github 酷安](https://gitee.com/sakurakyuo)
+12. fs.py [from @hais](http://z.hais.pw/)
+13. imgextractor.py [from 小新大大](https://github.com/xiaoxindada)
+14. lpmake & lpunpack aarch64[from @hais](http://z.hais.pw/)
+15. lpmake & lpunpack x86_64[from @yeliqin666](https://github.com/yeliqin666)
+16. mkfs.erofs aarch64 & x86_64 [from @忘川](https://github.com/bugme2/)
+17. simg2img [from @多幸运](http://www.coolapk.com/u/8160711)
+18. erofsUnpackKt [from @忘川](https://github.com/bugme2/erofs-oneplus)
+19. pack_ext4_with-rw.bash(modified by @yeliqin666) [from @多幸运](http://www.coolapk.com/u/8160711)
+20. pack_super.bash(modified by @yeliqin666) [from @秋水](Email：qiurigao@163.com)
+21. pack_payload.bin tools on x64_64 [from @秋水](Email：qiurigao@163.com)
+22. show.bash_with-dialog(modified by @yeliqin666) [CSDN]
+23. D.N.A. & CYToolkit for reference on UI [@sharpeter ](https://gitee.com/sharpeter/DNA) [from 闲出屁的imagine](https://gitee.com/sakurakyuo)
+24. debuging & suggestions [the active users!]
 
 
 ####  **工具预览** 
 
-1.  手机 Termux Proot Ubuntu 20.04 Arm64[aarch64]
+1.  手机 Termux Proot/chroot Arm64[aarch64]
 
 2.  虚拟机或实体机 Ubuntu 20.04 x86_64[x64]
 
@@ -141,10 +121,8 @@ Credit:
 
 ####  **交流反馈** 
 
-1.  QQ群1：[939212867] ( https://jq.qq.com/?_wv=1027&k=HOJVFqzP )
-
-    ~QQ群2：[945993403]
-
+  QQ群1：[939212867] ( https://jq.qq.com/?_wv=1027&k=HOJVFqzP )
+  酷安话题#TIK#
 
 
 ####  **免责声明** 

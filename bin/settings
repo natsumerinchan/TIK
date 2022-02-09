@@ -1,5 +1,66 @@
+
+# 设置
+function settings()
+{
+clear
+cd $LOCALDIR
+echo -e "\033[33m  > 设置 \033[0m"
+echo  
+echo "   1>修改等待时间 "
+echo  
+echo "   2>修改brotli压缩等级"
+echo  
+echo "   3>安卓-修改内置存储rom目录"
+echo  
+echo "   4>更新工具内部分依赖"
+echo  
+echo "   5>返回主页"
+echo -e "   --------------------------"
+read -p "   请输入编号: " op_pro
+if [ "$op_pro" == "1" ]; then
+	settings1
+elif [ "$op_pro" == "2" ]; then
+	settings2
+elif [ "$op_pro" == "3" ]; then
+	settings3
+elif [ "$op_pro" == "4" ]; then
+	toolupdate
+elif [ "$op_pro" == "5" ]; then
+	promenu
+else
+	echo  输入有误！
+	sleep $sleeptime
+	settings
+fi
+}
+
+function settings1()
+{
+echo 调整部分命令输出后的等待时间，当前为：$sleeptime秒
+read -p "	请输入（非负数）: " sleeptime
+sed -i 's/^sleeptime=.*/sleeptime='$sleeptime'/'  $binner/settings
+source $binner/settings
+settings
+}
+function settings2()
+{
+echo 调整brotli压缩等级（整数1-9，级别越高，压缩率越大，耗时越长），当前为：$brcom级
+read -p "	请输入（1-9）: " brcom
+sed -i 's/^brcom=.*/brcom='$brcom'/'  $binner/settings
+source $binner/settings
+settings
+}
+function settings3()
+{
+echo 修改安卓端在内置存储识别ROM的路径。当前为/sdcard/$mydir
+read -p "	请输入文件夹名称(英文): " mydir
+sed -i 's/^mydir=.*/mydir='$mydir'/'  $binner/settings
+source $binner/settings
+settings
+}
+
 #Settings
 sleeptime=1
-brcom=5
+brcom=4
 configcompl=1
-mydir=TIK
+mydir=

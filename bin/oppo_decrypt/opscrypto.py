@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Oneplus Decrypter (c) V 1.4 B.Kerler 2019-2021
+# Oneplus Decrypter (c) V 1.4 B.Kerler 2019-2022
 # Licensed under MIT License
 
 """
@@ -553,7 +553,7 @@ def main():
             path = filename[:filename.rfind("/")]
         else:
             path = ""
-        path = os.path.join(path, "ops_extract")
+        path = os.path.join(path, "extract")
         if os.path.exists(path):
             shutil.rmtree(path)
             os.mkdir(path)
