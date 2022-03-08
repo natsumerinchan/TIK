@@ -162,6 +162,7 @@ pip3 install pycryptodome -i $PIP_MIRROR
 pip3 install docopt -i $PIP_MIRROR
 pip3 install requests -i $PIP_MIRROR
 pip3 install beautifulsoup4 -i $PIP_MIRROR
+pip3 install --ignore-installed pyyaml -i $PIP_MIRROR
 ${su} apt --fix-broken install
 ${su} apt update --fix-missing
 touch $binner/depment
@@ -513,75 +514,79 @@ function miuiupdate()
 read -p "请选择地区代号：[1]国内版 [2]印尼版 [3]俄版 [4]国际版 [5]欧版 [6]土耳其版  [7]台湾版 [8]日本版 [9]新加坡版	" op_menu
 case $op_menu in
         1)
-        region=CN
+        region=cn
         ;;
 		2)
-        region=ID
+        region=id
         ;;
 		3)
-        region=RU
+        region=ru
         ;;
 		4)
-        region=Global
+        region=global
         ;;
 		5)
-        region=EEA
+        region=eea
         ;;
 		6)
-		region=TR
+		region=tr
 		;;
 		7)
-        region=TW
+        region=tw
         ;;
 		8)
-        region=GP
+        region=gp
         ;;
 		9)
-        region=SG
+        region=sg
         ;;
         *)
-        region=CN
+        region=cn
 		ywarn "默认选择国内版！"
 		sleep $sleeptime
-        menu
 esac
 
-read -p "请输入机型代号：	" mod
-sed -i 's/region = "[^"]*/region = "'$region'/' $binner/get_miui.py
+read -p "请输入机型代号：	" model
+echo 
 read -p "请选择类型[1]卡刷包 [2]线刷包：	" ver
 	case "$ver" in
 	2)
-	  sed -i 's/rom_cleases = "[^"]*/rom_cleases = "fastboot/' $binner/get_miui.py
+	  version=fastboot
 	  ;;
     *)
-      sed -i 's/rom_cleases = "[^"]*/rom_cleases = "recovery/' $binner/get_miui.py
-	  esac
-read -p "请选择类型[1]开发版 [2]稳定版	" ver
-	case "$ver" in
-	2)
-	  sed -i 's/rom_version = "[^"]*/rom_version = "stable/' $binner/get_miui.py
-	  ;;
-    *)
-      sed -i 's/rom_version = "[^"]*/rom_version = "beta/' $binner/get_miui.py
-	  esac
-miuilink=`python3 $binner/get_miui.py $mod`
-echo $miuilink
-if echo $miuilink | grep "Already" ; then
-	sleep $sleeptime&&sleep $sleeptime&&sleep $sleeptime
-else
-read -p "是否开始下载？[1/0]	" ver
-	case "$ver" in
-	1)
-	zip=$(basename $miuilink)
-	yecho "开始下载${zip}..."
-	sleep $sleeptime
-	aria2c -s 9 -x 2 $miuilink -d $Sourcedir
-	ysuc "下载完成！"
-	;;
-    *)
-	echo  
+      version=recovery
 	esac
-sleep $sleeptime
+read -p "请选择类型[1]开发版内测 [2]开发版公测 [3]稳定版	" typr
+	case $type in
+        1)
+        type=Beta
+        ;;
+		2)
+        type=PublicBeta
+        ;;
+		3)
+        type=Stable
+        ;;
+        *)
+        type=Beta
+		ywarn "默认选择开发版内测！"
+		sleep $sleeptime
+esac
+if python3 $binner/get_miui.py $region $model $version $type ; then
+	read -p "是否开始下载？[1/0]	" ver
+		case "$ver" in
+			1)
+			link=$(python3 $binner/get_miui.py $region $model $version $type)
+			zip=$(basename $link)
+			yecho "开始下载${zip}..."
+			sleep $sleeptime
+			aria2c -s 9 -x 2 $link -d $Sourcedir
+			ysuc "下载完成！"
+			;;
+			*)
+			echo  
+		esac
+	sleep $sleeptime
 fi
 promenu
 }
