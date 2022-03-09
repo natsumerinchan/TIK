@@ -20,7 +20,6 @@ if wait $pid 2>/dev/null; then
     pkill -HUP -P $watchdog
     wait $watchdog
 fi
-# else: command interrupted
 }
 
 
@@ -33,7 +32,7 @@ system
 vendor
 product
 system_ext
-vendor_vldk
+vendor_dlkm
 odm"
 export ebinner=$binner/$HOST/$platform
 export PS1="[\e[32;1m\u@\h \W]\\$"
@@ -522,7 +521,9 @@ fi
 
 function miuiupdate()
 {
-read -p "请选择地区代号：[1]国内版 [2]印尼版 [3]俄版 [4]国际版 [5]欧版 [6]土耳其版  [7]台湾版 [8]日本版 [9]新加坡版	" op_menu
+echo 
+echo "[1]国内版 [2]印尼版 [3]俄版 [4]国际版 [5]欧版 [6]土耳其版  [7]台湾版 [8]日本版 [9]新加坡版"
+read -p "请选择地区代号：" op_menu
 case $op_menu in
         1)
         region=cn
@@ -556,10 +557,11 @@ case $op_menu in
 		ywarn "默认选择国内版！"
 		sleep $sleeptime
 esac
-
-read -p "请输入机型代号：	" model
 echo 
-read -p "请选择类型[1]卡刷包 [2]线刷包：	" ver
+read -p "请输入机型代号：" model
+echo 
+echo "[1]卡刷包 [2]线刷包："
+read -p "请选择ROM类型：" ver
 	case "$ver" in
 	2)
 	  version=fastboot
@@ -567,7 +569,9 @@ read -p "请选择类型[1]卡刷包 [2]线刷包：	" ver
     *)
       version=recovery
 	esac
-read -p "请选择类型[1]开发版内测 [2]开发版公测 [3]稳定版	" typr
+echo 
+echo "[1]开发版内测 [2]开发版公测 [3]稳定版"
+read -p "请选择类型：" typr
 	case $typr in
         1)
         type=Beta
@@ -583,8 +587,9 @@ read -p "请选择类型[1]开发版内测 [2]开发版公测 [3]稳定版	" typ
 		ywarn "默认选择开发版内测！"
 		sleep $sleeptime
 esac
-if python3 $binner/get_miui.py $region $model $version $type ; then
-	read -p "是否开始下载？[1/0]	" ver
+if python3 $binner/get_miui.py $region $model $version $type > /dev/null 2>&1 ; then
+	echo 
+	read -p "是否开始下载？[1/0]：" ver
 		case "$ver" in
 			1)
 			link=$(python3 $binner/get_miui.py $region $model $version $type)
@@ -1137,7 +1142,7 @@ if [[ $op_pro =~ ^-?[1-9][0-9]*$ ]]; then
 				echo "cd %~dp0">>TIK_flash_all.bat
 				echo >>TIK_flash_all.bat
 
-				ls | grep "\.img" | grep -v "^odm\.img" | grep -v "^product\.img" | grep -v "^vendor\.img" | grep -v "^system\.img" | grep -v "^system_ext\.img" | while read i; do
+				ls | grep "\.img" | grep -v "^odm\.img" | grep -v "^product\.img" | grep -v "^vendor\.img" | grep -v "^vendor_dlkm\.img" | grep -v "^system\.img" | grep -v "^system_ext\.img" | while read i; do
 					line=$(echo "$i" | cut -d"." -f1)
 					echo "FlashImageTools\fastboot %* flash $line"_ab" images\\$line.img">>TIK_flash_all.bat
 				done
