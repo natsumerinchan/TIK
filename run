@@ -28,6 +28,13 @@ dyunboot=1
 HOST=$(uname)
 platform=$(uname -m)
 AIK="$binner/AIK"
+partitions="
+system
+vendor
+product
+system_ext
+vendor_vldk
+odm"
 export ebinner=$binner/$HOST/$platform
 export PS1="[\e[32;1m\u@\h \W]\\$"
  
@@ -157,7 +164,7 @@ ${su} sed -i 's/security.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sou
 yecho "正在更新软件列表..."
 ${su} apt-get update && ${su} apt-get upgrade -y >/dev/null
 yecho "正在安装必备软件包..."
-${su} apt-get install python3 python3-pip curl dialog default-jre bc cpio android-sdk-libsparse-utils aria2 openjdk-11-jre p7zip-full -y
+${su} apt-get install python3 python3-pip curl dialog default-jre bc cpio android-sdk-libsparse-utils aria2 openjdk-11-jre zip p7zip-full -y
 pip3 install --upgrade pip -i $PIP_MIRROR
 pip3 install pycryptodome -i $PIP_MIRROR
 pip3 install docopt -i $PIP_MIRROR
@@ -1095,20 +1102,89 @@ packmenu
 
 function vabpack()
 {
-clear
-if [[ ! -d "super" ]]; then
-	mkdir $PROJECT_DIR/super
+pro=0
+if ls *.zip >/dev/null 2>&1;then
+	for pros in $(ls -d *.zip)
+	do 
+	if [ -d "./$pros" ];then
+		pro=$((pro+1))
+		echo -e "   [$pro]  $pros\n"
+		eval "pro$pro=$pros" 
+	fi
+	done
+else
+	clear
+	ywarn "请把卡刷包文件放置在工作目录后重试！"
+	sleep $sleeptime
+	menu
 fi
-ywarn "请将需要动态分区镜像放置于$PROJECT_DIR/super中！"
-type1=VAB
-yecho "【FlashImageTools】正在生成线刷工具"
-${su} cp -r $binner/FlashImageTools $PROJECT_DIR
-read -p "请输入super分区大小（字节数，常见9126805504  10200547328）	" supersize
-insuper $PROJECT_DIR/super super
-mv $PROJECT_DIR/TI_out/$Supername.img $PROJECT_DIR/FlashImageTools
-ysuc "生成完毕于$PROJECT_DIR/FlashImageTools！"
-sleep $sleeptime
-menu
+echo 
+read -p "  请输入序号：" op_pro
+if [[ $op_pro =~ ^-?[1-9][0-9]*$ ]]; then
+	if ls *.zip >/dev/null 2>&1;then
+		if [ $op_pro -gt $pro ];then
+			ywarn "  请输入正确编号!"
+			sleep $sleeptime
+			menu
+		else
+			eval "zip=\$pro$op_pro"
+			7z x "$zip" > /dev/null
+			rm -rf *.pb *.txt META-INF >/dev/null 2>&1
+			if [[ -f "payload.bin" ]]; then
+				$ebinner/payload-dumper-go ./payload.bin -o ./payload
+				cd payload
+				echo "@echo off">TIK_flash_all.bat
+				echo "cd %~dp0">>TIK_flash_all.bat
+				echo >>TIK_flash_all.bat
+
+				ls | grep "\.img" | grep -v "^odm\.img" | grep -v "^product\.img" | grep -v "^vendor\.img" | grep -v "^system\.img" | grep -v "^system_ext\.img" | while read i; do
+					line=$(echo "$i" | cut -d"." -f1)
+					echo "FlashImageTools\fastboot %* flash $line"_ab" images\\$line.img">>TIK_flash_all.bat
+				done
+
+				echo "FlashImageTools\fastboot reboot fastboot">>TIK_flash_all.bat
+
+				for partition in ${partitions}; do
+					if [[ -f ${partition}.img ]]; then
+						echo >>TIK_flash_all.bat
+						echo "FlashImageTools\fastboot %* flash ${partition}"_a" images\\${partition}.img">>TIK_flash_all.bat
+					fi
+				done
+
+				echo >>TIK_flash_all.bat
+				echo "FlashImageTools\fastboot %* erase metadata">>TIK_flash_all.bat
+				echo "FlashImageTools\fastboot %* erase userdata">>TIK_flash_all.bat
+				echo "FlashImageTools\fastboot %* set_active a">>TIK_flash_all.bat
+				echo "FlashImageTools\fastboot %* reboot">>TIK_flash_all.bat
+				echo "pause">>TIK_flash_all.bat
+				echo >>TIK_flash_all.bat
+				cat TIK_flash_all.bat |sed -e '/erase/d' $i>TIK_flash_all_except_storage.bat
+				cp -r $binner/FlashImageTools ./FlashImageTools >/dev/null 2>&1
+				date=$(date +%y%m%d%H%M)
+				zip -q -r VABFlashRom_$date.zip *
+				mv VABFlashRom_$date.zip $LOCALDIR
+				cd ..
+				rm -rf payload >/dev/null 2>&1
+				ywarn "完成!"
+				sleep $sleeptime
+				menu
+			else
+				ywarn "非VAB刷机包!"
+				sleep $sleeptime
+				menu
+			fi
+		fi
+	else
+		ywarn "  请输入正确编号!"
+		sleep $sleeptime
+		menu
+	fi
+else
+	ywarn "  请输入正确编号!"
+	sleep $sleeptime
+	menu
+fi
+
 }
 
 function packsuper()
