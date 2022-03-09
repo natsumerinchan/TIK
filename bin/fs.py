@@ -8,11 +8,11 @@ def search(filename):
     dirfile = glob.glob(filename + "/*")
     for file in dirfile:
         search(file)
-        if fsn == "system":
-            filea = file.replace(dirna + "/system/","")
-        else:
-            filea = file.replace(dirna + "/","")
-        # os.system("echo " + filea + " >> " + fsa)
+        #if fsn == "system":
+        #    filea = file.replace(dirna + "/system/","")
+        #else:
+            
+        filea = file.replace(dirna + "/","")
         with open(fsa,"a") as f:
             f.write(filea+"\n")
         
@@ -37,11 +37,12 @@ if not re == set():
     nonei = no.read()
     new = open (dirna + "/TI_config/" + fsn + "_fs_confign","w")
     for i in re:
-        if os.path.isdir(dirna + "/system/" + i):
-            new.write(i + " 0 0 0755\n")
-        elif os.path.isfile(dirna + "/system/" +i):
-            new.write(i + " 0 0 0644\n")
-        elif os.path.isdir(dirna + "/" + i):
+        #if os.path.isdir(dirna + "/system/" + i):
+        #    new.write(i + " 0 0 0755\n")
+        #elif os.path.isfile(dirna + "/system/" +i):
+        #    new.write(i + " 0 0 0644\n")
+        #el
+        if os.path.isdir(dirna + "/" + i):
             new.write(i + " 0 0 0755\n")
         elif os.path.isfile(dirna + "/" +i):
                 new.write(i + " 0 0 0644\n")

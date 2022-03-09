@@ -22,24 +22,30 @@ fastboot %* flash modem_ab %~dp0images/modem.img
 fastboot %* flash qupfw_ab %~dp0images/qupfw.img
 fastboot %* flash tz_ab %~dp0images/tz.img
 fastboot %* flash uefisecapp_ab %~dp0images/uefisecapp.img
-fastboot %* --disable-verity --disable-verification flash vbmeta_ab %~dp0images/vbmeta.img
-fastboot %* --disable-verity --disable-verification flash vbmeta_system_ab %~dp0images/vbmeta_system.img
+fastboot %* flash vbmeta_ab %~dp0images/vbmeta.img
+fastboot %* flash vbmeta_system_ab %~dp0images/vbmeta_system.img
 fastboot %* flash vendor_boot_ab %~dp0images/vendor_boot.img
 fastboot %* flash xbl_ab %~dp0images/xbl.img
 fastboot %* flash xbl_config_ab %~dp0images/xbl_config.img
 fastboot %* flash super %~dp0super.img
+if exist images\vendor_dlkm.img echo 在重启到fastbootd用户分区！
+if exist images\vendor_dlkm.img fastboot reboot fastboot
+if exist images\vendor_dlkm.img echo 开始写入vendor dlkm独立分区！
+if exist images\vendor_dlkm.img fastboot create-logical-partition vendor_dlkm_a 1024
+if exist images\vendor_dlkm.img fastboot create-logical-partition vendor_dlkm_b 0
+if exist images\vendor_dlkm.img fastboot flash vendor_dlkm_a images\vendor_dlkm.img
 if "%CHOICE%" == "N" (
 	echo.
 	echo 用户数据正在清除中...
 	echo.
+	fastboot -w
 	fastboot %* erase userdata
 	fastboot %* erase metadata
-	fastboot -w
 )
 fastboot %* set_active a 
 fastboot %* reboot 
 echo 刷机完成!
 echo.
-echo 发现问题请提交issue！
+
 :Finish
 goto Finish

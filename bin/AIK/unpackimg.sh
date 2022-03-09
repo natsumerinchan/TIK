@@ -75,26 +75,16 @@ if [ ! -f "$img" ]; then
 fi;
 
 clear;
-echo " ";
-echo "Android Image Kitchen - UnpackImg Script";
-echo "by osm0sis @ xda-developers";
-echo " ";
 
 file=$(basename "$img");
-echo "Supplied image: $file";
-echo " ";
 
 if [ -d split_img -o -d ramdisk ]; then
   if [ -d ramdisk ] && [ "$(stat $statarg ramdisk | head -n 1)" = "root" -o ! "$(find ramdisk 2>&1 | cpio -o >/dev/null 2>&1; echo $?)" -eq "0" ]; then
     rmsumsg=" (as root)";
-  fi;
-  echo "Removing old work folders and files$rmsumsg...";
-  echo " ";
+  fi
   cleanup;
 fi;
 
-echo "Setting up work folders...";
-echo " ";
 mkdir split_img ramdisk;
 
 cd split_img;
@@ -363,7 +353,5 @@ else
   cd ..;
 fi;
 
-echo " ";
-echo "Done!";
 exit 0;
 

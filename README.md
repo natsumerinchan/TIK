@@ -94,7 +94,7 @@ Credit:
 8.  dtb_tools [from 小新大大 and 黑风](https://github.com/xiaoxindada/SGSI-build-tool)(http://www.coolapk.com/u/3473348)
 9.  FlashImageTools [from @hais](http://z.hais.pw/)
 10. oppo_decrypt [from bkerler @github](https://github.com/bkerler/oppo_decrypt)
-11. get_miui.py  [from 闲出屁的imagine @github 酷安](https://gitee.com/sakurakyuo)
+11. get_miui.py (By NightstarSakura) [@Github](https://github.com/NightstarSakura) [@酷安](https://www.coolapk.com/u/2670027)
 12. fs.py [from @hais](http://z.hais.pw/)
 13. imgextractor.py [from 小新大大](https://github.com/xiaoxindada)
 14. lpmake & lpunpack aarch64[from @hais](http://z.hais.pw/)
@@ -106,7 +106,7 @@ Credit:
 20. pack_super.bash(modified by @yeliqin666) [from @秋水](Email：qiurigao@163.com)
 21. pack_payload.bin tools on x64_64 [from @秋水](Email：qiurigao@163.com)
 22. show.bash_with-dialog(modified by @yeliqin666) [CSDN]
-23. D.N.A. & CYToolkit for reference on UI [@sharpeter ](https://gitee.com/sharpeter/DNA) [from 闲出屁的imagine](https://gitee.com/sakurakyuo)
+23. D.N.A. & CYToolkit for reference on UI [@sharpeter ](https://gitee.com/sharpeter/DNA) [@闲出屁的imagine](https://github.com/NightstarSakura)
 24. debuging & suggestions [the active users!]
 
 

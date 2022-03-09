@@ -45,7 +45,7 @@ function menu()
 clear
 PROJECT_DIR=$LOCALDIR/$project
 cd $PROJECT_DIR
-dynam=9
+PROCONFIG=$PROJECT_DIR/TI_config/PROJECT_CONFIG.conf
 clear
 if [[ ! -d "TI_config" ]]; then
 mkdir $PROJECT_DIR/TI_config
@@ -61,7 +61,6 @@ else
 	SYSTEM_DIR=0
 	echo "  非完整ROM项目"
 fi
-procon=$PROJECT_DIR/TI_config/project_config
 if [[ -f $SYSTEM_DIR/build.prop ]]; then
 vend=$(getprop "ro.product.manufacturer")
 version=$(getprop "ro.build.version.release=")
@@ -72,14 +71,15 @@ fi
 echo -en "\033[36m  机型：${vend} ${Model}  系统版本：Android ${version}\033[0m"
 if grep -q "ro.miui." $SYSTEM_DIR/build.prop;then
 miuiver=$(getprop "ro.miui.ui.version.code")
-echo -e "\033[36m  | MIUI $miuiver\033[0m"
+devver=$(getprop ro.system.build.version.incremental)
+echo -e "\033[36m  | MIUI $miuiver $devver\033[0m"
 fi
 fi
 echo  
 echo -e "\033[31m    1> 项目菜单      2> 分解菜单\033[0m\n" 
 echo -e "\033[32m    3> 合成菜单      4> 扩展插件\033[0m\n" 
-echo -e "\033[33m    5> 打包ROM       7> 移动分区文件\033[0m\n" 
-echo -e "\033[36m    8> 制作V-AB线刷包\033[0m" 
+echo -e "\033[33m    5> 打包ROM       6> 移动分区文件\033[0m\n" 
+echo -e "\033[36m    7> 制作V-AB线刷包\033[0m" 
 echo  
 read -p "    请输入编号: " op_menu
 case $op_menu in
@@ -102,7 +102,8 @@ case $op_menu in
 		if [ "$platform" = "aarch64" ];then
 			movedir
 		else
-			ywarn "   请输入正确编号!"
+			ywarn "   不适用！!"
+			sleep $sleeptime
 			menu
 		fi
         ;;
@@ -208,22 +209,24 @@ if [ "$op_pro" == "j" ]; then
 elif [ "$op_pro" == "x" ]; then
 	xiazai
 elif [ "$op_pro" == "d" ]; then
-	read -p "请输入你要删除的项目序号：" deln
+	read -p "  请输入你要删除的项目序号：" deln
 	if ls TI_* >/dev/null 2>&1;then
 		if [ $deln -gt $pro ];then
-			ywarn "请输入正确编号!"
+			ywarn "  请输入正确编号!"
 			sleep $sleeptime
 			promenu
 		else
 			eval "delproject=\$pro$deln"
-			read -p "在回车之前，您可以ctrl+c中断删除" null
-			rm -fr $delproject
-			ysuc "删除成功！"
-			sleep $sleeptime
+			read -p "  真假？？[1/0]" delr
+			if [ "$delr" == "1" ];then
+				rm -fr $delproject
+				ysuc "  删除成功！"
+				sleep $sleeptime
+			fi
 			promenu
 		fi
 	else
-		ywarn  "输入有误！"
+		ywarn  "  输入有误！"
 		sleep $sleeptime
 		promenu
 	fi
@@ -245,7 +248,7 @@ elif [[ $op_pro =~ ^-?[1-9][0-9]*$ ]]; then
 	if ls TI_* >/dev/null 2>&1;then
 	
 	if [ $op_pro -gt $pro ];then
-	ywarn "请输入正确编号!"
+	ywarn "  请输入正确编号!"
 	sleep $sleeptime
 	promenu
 	else
@@ -254,12 +257,12 @@ elif [[ $op_pro =~ ^-?[1-9][0-9]*$ ]]; then
 		menu
 	fi
 	else
-	ywarn "请输入正确编号!"
+	ywarn "  请输入正确编号!"
 	sleep $sleeptime
 	promenu
 	fi
 else
-	ywarn "请输入正确编号!"
+	ywarn "  请输入正确编号!"
 	sleep $sleeptime
 	promenu
 fi
@@ -277,6 +280,7 @@ i=$(echo "$i0" | rev | cut -d"/" -f1 | rev)
 if [ "$exit0" == "1" ]; then
 promenu
 else
+clear
 read -p "请输入项目名称(非中文,可留空)：" projec
 if test -z "$projec";then
 	sf=$(echo "$i0" | rev | cut -d"/" -f1| cut -d'.' -f1 --complement | rev)
@@ -419,7 +423,7 @@ show
 if [ "$exit0" == "1" ]; then
 	subbed
 else
-	zs=$(echo "$i" | rev | cut -d"/" -f1| cut -d'.' -f1 --complement | rev)
+	zs=$(echo "$i0" | rev | cut -d"/" -f1| cut -d'.' -f1 --complement | rev)
 	mkdir $binner/subs/$zs
 	yecho "安装插件[$zs]中..."
 	7z x "$i0" -o"$binner/subs/$zs" > /dev/null
@@ -557,7 +561,7 @@ read -p "请选择类型[1]卡刷包 [2]线刷包：	" ver
       version=recovery
 	esac
 read -p "请选择类型[1]开发版内测 [2]开发版公测 [3]稳定版	" typr
-	case $type in
+	case $typr in
         1)
         type=Beta
         ;;
@@ -590,6 +594,7 @@ if python3 $binner/get_miui.py $region $model $version $type ; then
 fi
 promenu
 }
+
 
 # 下载器
 function xiazai()
@@ -632,14 +637,14 @@ clear
 cd $LOCALDIR && cd $project
 clear
 echo  
-echo -e "\033[33m<-打包菜单 \033[0m" 
-echo "	--------------------------------"
-echo " 	1 > 返回 hom       2 > 打包 Bro " 
-echo " 	3 > 打包 Dat       4 > 打包 Img " 
-echo " 	5 > 打包 Super     6 > 打包 DTBO" 
-echo " 	7 > 打包 DTB	"
-echo " 	--------------------------------" 
-read -p "	请输入编号: " op_menu
+echo -e "\033[33m <-打包菜单 \033[0m" 
+echo "  --------------------------------"
+echo "  1 > 返回 hom       2 > 打包 Bro " 
+echo "  3 > 打包 Dat       4 > 打包 Img " 
+echo "  5 > 打包 Super     6 > 打包 DTBO" 
+echo "  7 > 打包 DTB	"
+echo "  --------------------------------" 
+read -p "  请输入编号: " op_menu
 case $op_menu in
         1)
         menu
@@ -676,7 +681,7 @@ function unpmenu()
 {
 clear
 cd $LOCALDIR && cd $project
-echo -e "\033[33m<-分解菜单 \033[0m" 
+echo -e "\033[33m <-分解菜单 \033[0m" 
 echo "  --------------------------------"
 echo "  1 > 返回 hom       2 > 分解 Bro " 
 echo "  3 > 分解 Dat       4 > 分解 Img " 
@@ -751,7 +756,7 @@ if ls *.$type1 >/dev/null 2>&1;then
 	
 	ls *.${type1} | while read i; do
 	sf=$(echo "$i" | cut -d"/" -f3| cut -d"." -f1)
-	info=$(file $i)
+	info=$($ebinner/gettype -i $i)
 	if [ "$unpall" = "y" ];then
 		yecho "解包 $i"
 		rm -fr ./$sf
@@ -805,7 +810,6 @@ if ls ./TI_config/*.boot >/dev/null 2>&1;then
 	pacimglist=$(ls ./TI_config/*.boot)
 	ls ./TI_config/*.boot | while read i; do
 	sf=$(echo "$i" | cut -d"/" -f3| cut -d"." -f1)
-	info=$(file $i)
 	rm -rf $AIK/split_img
 	rm -rf $AIK/ramdisk
 	rm -rf $AIK/*.img
@@ -827,7 +831,7 @@ fi
 if ls ./TI_config/*_fs_config >/dev/null 2>&1;then
 	read -p "是否打包所有系统镜像？ [y/n]	" pacall
 	
-	read -p "打包文件系统: [1]ext4 [2]erofs+lz4 [2]erofs	" syscheck
+	read -p "打包文件系统: [1]ext4 [2]erofs+lz4hc [3]erofs+lz4  [4]erofs	" syscheck
 	
 	ls ./TI_config/*_fs_config | while read i; do
 	sf=$(echo "$i" | cut -d"/" -f3 | rev | cut -d'_' -f1 --complement | cut -d'_' -f1 --complement | rev)
@@ -841,7 +845,7 @@ if ls ./TI_config/*_fs_config >/dev/null 2>&1;then
 		if [ "$imgcheck" != "n" ];then
 			yecho "打包 ${sf}..."
 			rm -f ${sf}.img > /dev/null
-			inpacker $sf >/dev/null 2>&1
+			inpacker $sf > /dev/null
 		fi
 	fi
 	done
@@ -865,7 +869,7 @@ inpacker(){
 	#分区大小处理
 	zj=`du -sb $name | awk {'print $1'}`
 	if [ $zj -gt 10000000 ] ; then
-		img_size0=`echo "$zj * 1.0758" |bc`
+		img_size0=`echo "$zj * 1.0755" |bc`
 	else
 		img_size0=`echo "$zj * 1.2" |bc`  
 	fi
@@ -881,10 +885,12 @@ inpacker(){
 	if [ "$syscheck" = "2" ];then
 	${su} $ebinner/mkfs.erofs -zlz4hc --mount-point $mount_path --fs-config-file $fs_config --file-contexts $file_contexts $out_img $in_files > /dev/null
 	elif [ "$syscheck" = "3" ];then
+	${su} $ebinner/mkfs.erofs -zlz4 --mount-point $mount_path --fs-config-file $fs_config --file-contexts $file_contexts $out_img $in_files > /dev/null
+	elif [ "$syscheck" = "4" ];then
 	${su} $ebinner/mkfs.erofs --mount-point $mount_path --fs-config-file $fs_config --file-contexts $file_contexts $out_img $in_files > /dev/null
 	else
-	MKE2FS_CONFIG=$binner/mke2fs.conf E2FSPROGS_FAKE_TIME=1230768000 $ebinner/mke2fs -O ^has_journal -L $name -I 256 -M $mount_path -m 0 -t ext4 -b $BLOCKSIZE $out_img $size > /dev/null
-    ${su} $ebinner/e2fsdroid -e -T $UTC -C $fs_config -S $file_contexts -f $in_files -a $mount_path $out_img
+	$ebinner/mke2fs -O ^has_journal -L $name -I 256 -M $mount_path -m 0 -t ext4 -b $BLOCKSIZE $out_img $size > /dev/null
+    ${su} $ebinner/e2fsdroid -e -T $UTC -C $fs_config -S $file_contexts -f $in_files -a $mount_path $out_img > /dev/null
 	fi
 	if [ "$dat" = "1" ];then
 		$ebinner/img2simg ./TI_out/${name}.img $PROJECT_DIR/TI_out/${name}.s.img > /dev/null
@@ -1004,7 +1010,6 @@ if [ "$super" == "1" ];then
 	mkdir super_${sf}
 	TARGETDIR=./super_${sf}
 	$lpunpack $PROJECT_DIR/${sf}.img $TARGETDIR
-	cat supersize=$super_size > $procon
 	if [ $? != "0" ];then
 		ywarn "解压失败"
 	else
@@ -1012,17 +1017,20 @@ if [ "$super" == "1" ];then
 	fi
 	touch ./TI_config/super_${sf}
 	chmod 777 -R $TARGETDIR
-elif echo $info | grep "ext2" > /dev/null 2>&1; then
+elif [ "$info" = "ext" ]; then
 	${su} python3 $binner/imgextractor.py $PROJECT_DIR/$sf.img ./ > /dev/null
-elif echo $info | grep "sparse" > /dev/null 2>&1; then
+	
+elif [ "$info" = "erofs" ]; then
+	$ebinner/erofsUnpackKt $i ./
+	mv ./config/* ./TI_config&&rm -fr ./config
+elif [ "$info" = "sparse" ]; then
 	${su} python3 $binner/imgextractor.py $PROJECT_DIR/$sf.img ./ > /dev/null
 	rm -rf ./$sf.raw.img
-elif echo $info | grep "bootimg" > /dev/null 2>&1 || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ] ; then
+elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ]  || [ "mn" == "autoboot" ] ; then
 	${su} mkdir $sf
-	${su} $AIK/unpackimg.sh $PROJECT_DIR/$i ./ > /dev/null
-	${su} mv $AIK/ramdisk $PROJECT_DIR/$sf&&mv $AIK/split_img $PROJECT_DIR/$sf
-	chmod 777 -R ./$sf/
-	touch $PROJECT_DIR/TI_config/$i.boot
+	${su} $AIK/unpackimg.sh $PROJECT_DIR/$i ./ >> $PROJECT_DIR/TI_config/$i.boot
+	${su} mv $AIK/ramdisk $PROJECT_DIR/$sf&&${su} mv $AIK/split_img $PROJECT_DIR/$sf
+	${su} chmod 777 -R ./$sf/
 else
 	ywarn "正在尝试使用erofs解压"
 	$ebinner/erofsUnpackKt $i ./
@@ -1037,7 +1045,7 @@ fi
 function undtb()
 {
 cd $LOCALDIR && cd $project
-echo -e "\033[33m<-分解DTB \033[0m" 
+echo -e "\033[33m <-分解DTB \033[0m" 
 rm -rf $dtbdir
 if [ ! -e ./dtb ];then
   ywarn " dtb文件不存在！它或许存在于boot或者vendor_boot中，请解包后移至项目根目录"
@@ -1088,12 +1096,16 @@ packmenu
 function vabpack()
 {
 clear
-echo "请将需要动态分区镜像放置于$PROJECT_DIR/super中！"
+if [[ ! -d "super" ]]; then
+	mkdir $PROJECT_DIR/super
+fi
+ywarn "请将需要动态分区镜像放置于$PROJECT_DIR/super中！"
 type1=VAB
 yecho "【FlashImageTools】正在生成线刷工具"
 ${su} cp -r $binner/FlashImageTools $PROJECT_DIR
-read -p "请输入super分区大小（字节数，常见9126805504）	" supersize
-insuper $PROJECT_DIR/TI_out super
+read -p "请输入super分区大小（字节数，常见9126805504  10200547328）	" supersize
+insuper $PROJECT_DIR/super super
+mv $PROJECT_DIR/TI_out/$Supername.img $PROJECT_DIR/FlashImageTools
 ysuc "生成完毕于$PROJECT_DIR/FlashImageTools！"
 sleep $sleeptime
 menu
@@ -1102,6 +1114,9 @@ menu
 function packsuper()
 {
 clear
+if [[ ! -d "super" ]]; then
+	mkdir $PROJECT_DIR/super
+fi
 ywarn "请将需要打包的分区镜像放置于$PROJECT_DIR/super中！"
 read -p "请输入打包模式：[1]A_only [2]AB [3]V-AB	" typee
 if [ "$typee" = "3" ];then
@@ -1112,7 +1127,7 @@ else
 type1=A_only
 fi
 read -p "是否打包为sparse镜像？[1/0]	" sparse
-read -p "请输入super分区大小（字节数，常见9126805504）	" supersize
+read -p "请输入super分区大小（字节数，常见9126805504  10200547328）	" supersize
 read -p "请输入输出镜像名:	" supername
 insuper $PROJECT_DIR/super $supername
 packmenu
@@ -1129,12 +1144,12 @@ function inunpack()
 		rm -f $sf.new.dat $sf.img
 		$ebinner/brotli -d $PROJECT_DIR/$file > /dev/null
 		python3 $binner/sdat2img.py $sf.transfer.list $sf.new.dat $PROJECT_DIR/$sf.img > /dev/null
-		info=$(file $sf.img)
+		info=$($ebinner/gettype -i $sf.img)
 		imgextra
 	elif [ "$type1" = "dat" ];then
 		rm -f $sf.img
 		python3 $binner/sdat2img.py $sf.transfer.list $sf.new.dat $PROJECT_DIR/$sf.img > /dev/null
-		info=$(file $sf.img)
+		info=$($ebinner/gettype -i $sf.img)
 		imgextra
 	elif [ "$type1" = "img" ];then
 		imgextra
@@ -1154,9 +1169,13 @@ function inunpack()
 		if [ "$extp" = "all" ];then 
 			$ebinner/payload-dumper-go $PROJECT_DIR/$file -o $PROJECT_DIR/payload
 		else
+			if [[ ! -d "payload" ]]; then
+				mkdir $PROJECT_DIR/payload
+			fi
 			for d in $extp
 			do
-				$ebinner/payload-dumper-go -p $d $PROJECT_DIR/$file -o $PROJECT_DIR/payload > /dev/null 2>&1
+				$ebinner/payload-dumper-go -p $d $PROJECT_DIR/$file -o $PROJECT_DIR/payload${d} > /dev/null 2>&1
+				mv $PROJECT_DIR/payload${d} $PROJECT_DIR/payload&&rm -fr payload${d}
 			done
 		fi
 	elif [ "$type1" = "win000" ];then
@@ -1171,13 +1190,15 @@ function inunpack()
 	else
 		ywarn "未知格式！"
 	fi
+	${su} chmod 777 -R $sf
 }
 
 
 # 自动解压
 function autounpack()
 {
-mkdir TI_config
+mkdir TI_config&&touch TI_config/PROJECT_CONFIG.conf
+echo "PROJECT_NAME=$project" >> TI_config/PROJECT_CONFIG.conf
 yecho "自动解包阶段开始，将自动删除源文件！"
 # payload.bin解包
 if [ -f "./payload.bin" ]; then
@@ -1185,9 +1206,43 @@ if [ -f "./payload.bin" ]; then
 	$ebinner/payload-dumper-go ./payload.bin -o ./payload
 	yecho "payload.bin解包完成！"
 	sleep $sleeptime
-	rm -rf payload.bin
-	menu
+	rm -rf payload.bin&&rm -rf care_map.pb&&rm -rf payload_properties.txt
+	echo "#dynamic_partitions_info
+ROM_TYPE=VAB" >> TI_config/PROJECT_CONFIG.conf
+	read -p "请输入动态分区列表(空格隔开): " dynamic_partitions
+	echo "dynamic_partitions=$dynamic_partitions" >> TI_config/PROJECT_CONFIG.conf
+	read -p "请输入启动镜像列表(空格隔开): " android_bootimg_partitons
+	echo "android_bootimg_partitons=$android_bootimg_partitons" >> TI_config/PROJECT_CONFIG.conf
+	read -p "请输入Super分区大小(字节数;可跳过): " super_partition_size
+	read -p "是否为erofs格式?[y/n]" erocheck
+	if test -z "$projec";then
+		super_partition_size=0
+	else  
+		echo "super_partition_size=$super_partition_size" >> TI_config/PROJECT_CONFIG.conf
+	fi
+	for d in $dynamic_partitions
+	do
+		mv ./payload/$d.img ./
+		if [ "$erocheck" != "y" ];then
+		sudo python3 $binner/imgextractor.py $d.img ./
+		else
+		sudo $ebinner/erofsUnpackKt ./$d.img ./
+		fi
+		rm -rf $d.img
+	done
+	mn=autoboot
+	for m in $android_bootimg_partitons
+	do
+		i=$m.img
+		mv ./payload/$i ./
+		info=$($ebinner/gettype -i $i)
+		sf=$(echo "$i" | cut -d"/" -f3| cut -d"." -f1)
+		imgextra
+		rm -rf $i
+	done
+	
 else
+
 # 解压br文件
 if ls *.br >/dev/null 2>&1;then
 	ls *.new.dat.br | while read b; do
@@ -1197,7 +1252,7 @@ if ls *.br >/dev/null 2>&1;then
 		rm -rf $sf.new.dat.br
 		${su} python3 $binner/sdat2img.py ${sf}.transfer.list ${sf}.new.dat ./${sf}.img > /dev/null 2>&1
 		rm -rf ./${sf}.new.dat && rm -rf ./${sf}.patch.dat && rm -rf ./${sf}.transfer.list > /dev/null 2>&1
-		info=$(file $sf.img)
+		info=$($ebinner/gettype -i $sf.img)
 		i=$sf.img
 		imgextra
 		rm -rf ./${sf}.img
@@ -1222,7 +1277,7 @@ if ls *.dat >/dev/null 2>&1;then
 		yecho "解包$sf..."
 		${su} python3 $binner/sdat2img.py ${sf}.transfer.list ${sf}.new.dat ./${sf}.img > /dev/null 2>&1
 		rm -rf ./${sf}.new.dat && rm -rf ./${sf}.patch.dat && rm -rf ./${sf}.transfer.list > /dev/null 2>&1
-		info=$(file $sf.img)
+		info=$($ebinner/gettype -i $sf.img)
 		i=$sf.img
 		imgextra
 	done
@@ -1231,7 +1286,7 @@ fi
 # 解压img
 if ls *.img >/dev/null 2>&1;then
 	ls *.img | while read i; do
-		info=$(file $i)
+		info=$($ebinner/gettype -i $i)
 		sf=$(echo "$i" | cut -d"/" -f3| cut -d"." -f1)
 		yecho "解包$i..."
 		imgextra
@@ -1257,7 +1312,36 @@ if ls *.win >/dev/null 2>&1;then
 		sleep $sleeptime
 	done
 fi
+
+	read -p "请输入动态分区列表(空格隔开;可跳过): " dynamic_partitions
+	echo "dynamic_partitions=${dynamic_partitions}" >> TI_config/PROJECT_CONFIG.conf
+	read -p "请输入Super分区大小(字节数;可跳过): " super_partition_size
+	if test -z "$projec";then
+		super_partition_size=0
+	else  
+		echo "super_partition_size=$super_partition_size" >> TI_config/PROJECT_CONFIG.conf
+	fi
+	
 fi
+${su} chmod 777 -R *
+
+if [[ -f $PROJECT_DIR/system/system/build.prop ]]; then
+	SYSTEM_DIR="$PROJECT_DIR/system/system"
+elif [[ -f $PROJECT_DIR/system/build.prop ]]; then
+	SYSTEM_DIR="$PROJECT_DIR/system"
+fi
+
+echo "#SYSTEM_INFO" >> TI_config/PROJECT_CONFIG.conf
+ANDROID_VERSION=$(getprop "ro.build.version.release=")&&echo "ANDROID_VERSION=$ANDROID_VERSION" >> TI_config/PROJECT_CONFIG.conf
+MODEL=$(getprop "ro.product.mod_device")
+if ! grep -q "ro.product.mod_device" $SYSTEM_DIR/build.prop;then
+	MODEL=$(getprop "ro.product.model")
+fi
+echo "MODEL=$MODEL" >> TI_config/PROJECT_CONFIG.conf
+MIUI_VERSION=$(getprop "ro.miui.ui.version.code")&&echo "MIUI_VERSION=$MIUI_VERSION" >> TI_config/PROJECT_CONFIG.conf
+MIUI_DEV=$(getprop ro.system.build.version.incremental)&&echo "MIUI_DEV=$MIUI_DEV" >> TI_config/PROJECT_CONFIG.conf
+
+
 menu
 }
 
@@ -1268,6 +1352,7 @@ function insuper()
 Imgdir=$1
 Supername=$2
 group_size=0
+${su} chmod -R 777 $Imgdir
 
 find $Imgdir -name "*" -type f -size 0c | xargs -n 1 rm -f
 
@@ -1284,20 +1369,29 @@ superpa+=" --metadata-slots 2 "
   
 superpa+="--device super:$supersize "
 
+for imag in $(ls $Imgdir/*.img);do
+	image=$(echo "$imag" | rev | cut -d"/" -f1 | rev  | sed 's/_a.img//g' | sed 's/_b.img//g'| sed 's/.img//g')
+if ! echo $superpa | grep "partition "$image":readonly" > /dev/null && ! echo $superpa | grep "partition "$image"_a:readonly" > /dev/null  ;then
 
-for imag in $(ls $Imgdir/*.img);do 
-	image=$(echo "$imag" | rev | cut -d"/" -f1 | rev | sed 's/.img//g' | sed 's/_a//g' | sed 's/_b//g')
-	mv $imag $Imgdir/$image.img > /dev/null 2>&1
-	img_size=$(wc -c <$Imgdir/$image.img)
-	imgName=$(basename $Imgdir/$image.img)
-	item_partition=${image}
-	group_size=`expr ${img_size} + ${group_size}`
 if [ "$type1" = "VAB" ] || [ "$type1" = "AB" ];then
-superpa+="--partition "$image"_a:readonly:$img_size:main --image "$image"_a=$Imgdir/$image.img --partition "$image"_b:readonly:0:main "
+	if [[ -f $Imgdir/${image}_a.img ]] && [[ -f $Imgdir/${image}_b.img ]];then
+		img_sizea=$(wc -c <$Imgdir/${image}_a.img) && img_sizeb=$(wc -c <$Imgdir/${image}_b.img)
+		group_size=`expr ${img_sizea} + ${img_sizeb} + ${group_size}`
+		superpa+="--partition "$image"_a:readonly:$img_sizea:main --image "$image"_a=$Imgdir/${image}_a.img --partition "$image"_b:readonly:$img_sizeb:main --image "$image"_b=$Imgdir/${image}_b.img "
+	else
+		mv $imag $Imgdir/$image.img > /dev/null 2>&1
+		img_size=$(wc -c <$Imgdir/$image.img)
+		group_size=`expr ${img_size} + ${group_size}`
+		superpa+="--partition "$image"_a:readonly:$img_size:main --image "$image"_a=$Imgdir/$image.img --partition "$image"_b:readonly:0:main "
+	fi
 else
+img_size=$(wc -c <$Imgdir/$image.img)
 superpa+="--partition "$image":readonly:$img_size:main --image "$image"=$Imgdir/$image.img "
+group_size=`expr ${img_size} + ${group_size}`
+fi
 fi
 done
+
 superpa+=" --group main:$group_size "
 superpa+="-F --output $PROJECT_DIR/TI_out/$Supername.img"
 if ( $ebinner/lpmake $superpa 2>&1 );then
@@ -1305,6 +1399,7 @@ if ( $ebinner/lpmake $superpa 2>&1 );then
 else
     ywarn "创建super.img失败！"
 fi
+type1=0
 sleep $sleeptime
 }
 
