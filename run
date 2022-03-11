@@ -130,7 +130,7 @@ function checkpath()
 clear
 cd $LOCALDIR
 if [[ -f "$binner/depment" ]]; then
-echo -n "  欢"&&sleep 0.03&&echo -n 迎&&sleep 0.03&&echo -n 使&&sleep 0.02&&echo -n 用&&sleep 0.03&&echo -n T&&sleep 0.03&&echo -n I&&sleep 0.02&&echo -n K&&sleep 0.02&&echo -n 全&&sleep 0.03&&echo -n 能&&sleep 0.02&&echo -n 工&&sleep 0.03&&echo -n 具&&sleep 0.02&&echo -n 箱&&sleep 0.03&&echo -n （体验版）！&&sleep 0.2
+echo -n "  欢"&&sleep 0.01&&echo -n 迎&&sleep 0.01&&echo -n 使&&sleep 0.01&&echo -n 用&&sleep 0.01&&echo -n T&&sleep 0.01&&echo -n I&&sleep 0.01&&echo -n K&&sleep 0.01&&echo -n 全&&sleep 0.01&&echo -n 能&&sleep 0.01&&echo -n 工&&sleep 0.01&&echo -n 具&&sleep 0.02&&echo -n 箱&&sleep 0.01&&echo -n （debug）！&&sleep 0.2
 else
 clear
 echo -n 您&&sleep 0.04&&echo -n 好&&sleep 0.04&&echo -n ，&&sleep 0.5&&echo -n 欢&&sleep 0.04&&echo -n 迎&&sleep 0.04&&echo -n 使&&sleep 0.04&&echo -n 用&&sleep 0.04&&echo -n  TIK &&sleep 0.04&&echo 全能工具箱！&&sleep 1

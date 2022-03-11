@@ -44,7 +44,7 @@ case $plat in
     xz() { DYLD_LIBRARY_PATH="$bin/$arch" "$bin/$arch/xz" "$@"; }
   ;;
   linux)
-    cpio=cpio;
+    cpio=$bin/$arch/cpio;
     [ "$(cpio --version | head -n1 | rev | cut -d\  -f1 | rev)" = "2.13" ] && cpiowarning=1;
     statarg="-c %U";
   ;;
