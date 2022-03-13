@@ -129,14 +129,8 @@ function checkpath()
 {
 clear
 cd $LOCALDIR
-if [[ -f "$binner/depment" ]]; then
-echo -n "  欢"&&sleep 0.01&&echo -n 迎&&sleep 0.01&&echo -n 使&&sleep 0.01&&echo -n 用&&sleep 0.01&&echo -n T&&sleep 0.01&&echo -n I&&sleep 0.01&&echo -n K&&sleep 0.01&&echo -n 全&&sleep 0.01&&echo -n 能&&sleep 0.01&&echo -n 工&&sleep 0.01&&echo -n 具&&sleep 0.02&&echo -n 箱&&sleep 0.01&&echo -n （debug）！&&sleep 0.2
-else
-clear
-echo -n 您&&sleep 0.04&&echo -n 好&&sleep 0.04&&echo -n ，&&sleep 0.5&&echo -n 欢&&sleep 0.04&&echo -n 迎&&sleep 0.04&&echo -n 使&&sleep 0.04&&echo -n 用&&sleep 0.04&&echo -n  TIK &&sleep 0.04&&echo 全能工具箱！&&sleep 1
-echo -n 将&&sleep 0.04&&echo -n 通&&sleep 0.04&&echo -n 过&&sleep 0.04&&echo -n 几&&sleep 0.04&&echo -n 个&&sleep 0.04&&echo -n 步&&sleep 0.04&&echo -n 骤&&sleep 0.04&&echo -n ，&&sleep 0.5&&echo -n 帮&&sleep 0.04&&echo -n 您&&sleep 0.04&&echo -n 配&&sleep 0.04&&echo -n 置&&sleep 0.04&&echo -n 好&&sleep 0.04&&echo -n 工&&sleep 0.04&&echo 具&&sleep 1
+if [[ ! -f "$binner/depment" ]]; then
 PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
-clear
 echo -e "\033[34m $(cat $binner/banner) \033[0m"
 if [[ $(which id) ]]; then
 if [[ $(id -u) = "0" ]]; then
@@ -161,9 +155,14 @@ ${su} cp /etc/apt/sources.list /etc/apt/sources.list.bak
 ${su} sed -i 's/archive.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
 ${su} sed -i 's/security.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
 yecho "正在更新软件列表..."
-${su} apt-get update && ${su} apt-get upgrade -y >/dev/null
+#${su} apt-get update  -y && ${su} apt-get upgrade -y 
 yecho "正在安装必备软件包..."
-${su} apt-get install python3 python3-pip curl dialog default-jre bc cpio android-sdk-libsparse-utils aria2 openjdk-11-jre zip p7zip-full -y
+packages="python3 python3-pip curl dialog default-jre bc android-sdk-libsparse-utils aria2 openjdk-11-jre zip p7zip-full"
+for i in $packages
+do
+yecho "安装$i..."
+${su} apt-get install $i -y
+done
 pip3 install --upgrade pip -i $PIP_MIRROR
 pip3 install pycryptodome -i $PIP_MIRROR
 pip3 install docopt -i $PIP_MIRROR
@@ -588,11 +587,11 @@ read -p "请选择类型：" typr
 		sleep $sleeptime
 esac
 if python3 $binner/get_miui.py $region $model $version $type > /dev/null 2>&1 ; then
-	echo 
+	link=$(python3 $binner/get_miui.py $region $model $version $type)
+	echo $link
 	read -p "是否开始下载？[1/0]：" ver
 		case "$ver" in
 			1)
-			link=$(python3 $binner/get_miui.py $region $model $version $type)
 			zip=$(basename $link)
 			yecho "开始下载${zip}..."
 			sleep $sleeptime
@@ -1031,9 +1030,8 @@ if [ "$super" == "1" ];then
 	chmod 777 -R $TARGETDIR
 elif [ "$info" = "ext" ]; then
 	${su} python3 $binner/imgextractor.py $PROJECT_DIR/$sf.img ./ > /dev/null
-	
 elif [ "$info" = "erofs" ]; then
-	$ebinner/erofsUnpackKt $i ./
+	$ebinner/erofsUnpackRust $i ./
 	mv ./config/* ./TI_config&&rm -fr ./config
 elif [ "$info" = "sparse" ]; then
 	${su} python3 $binner/imgextractor.py $PROJECT_DIR/$sf.img ./ > /dev/null
@@ -1045,8 +1043,8 @@ elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] |
 	${su} chmod 777 -R ./$sf/
 else
 	ywarn "正在尝试使用erofs解压"
-	$ebinner/erofsUnpackKt $i ./
-	if ! $ebinner/erofsUnpackKt $i ./ 2&>/dev/null ;then
+	$ebinner/erofsUnpackRust $i ./
+	if ! $ebinner/erofsUnpackRust $i ./ 2&>/dev/null ;then
 		ywarn "$i解压失败！"
 	fi
 	mv ./config/* ./TI_config&&rm -fr ./config
@@ -1260,12 +1258,12 @@ function inunpack()
 			done
 		fi
 	elif [ "$type1" = "win000" ];then
-		${su} cat ./${sf}.win00{1..9} 2>/dev/null >> ./${sf}.win
+		${su} cat ./${sf}.win00{1..9}  >> ./${sf}.win
 		${su} python3 $binner/imgextractor.py ./${sf}.win ./
 	elif [ "$type1" = "win" ];then
 		${su} python3 $binner/imgextractor.py ./${sf}.win ./
 	elif [ "$type1" = "dat.1" ];then
-		${su} cat ./${sf}.new.dat.{1..999} 2>/dev/null >> ./${sf}.new.dat > /dev/null 2>&1
+		${su} cat ./${sf}.new.dat.{1..999} >> ./${sf}.new.dat
 		python3 $binner/sdat2img.py $sf.transfer.list $sf.new.dat ./$sf.img
 		imgextra
 	else
@@ -1295,7 +1293,6 @@ ROM_TYPE=VAB" >> TI_config/PROJECT_CONFIG.conf
 	read -p "请输入启动镜像列表(空格隔开): " android_bootimg_partitons
 	echo "android_bootimg_partitons=$android_bootimg_partitons" >> TI_config/PROJECT_CONFIG.conf
 	read -p "请输入Super分区大小(字节数;可跳过): " super_partition_size
-	read -p "是否为erofs格式?[y/n]" erocheck
 	if test -z "$projec";then
 		super_partition_size=0
 	else  
@@ -1304,10 +1301,12 @@ ROM_TYPE=VAB" >> TI_config/PROJECT_CONFIG.conf
 	for d in $dynamic_partitions
 	do
 		mv ./payload/$d.img ./
-		if [ "$erocheck" != "y" ];then
+		erocheck=$($ebinner/gettype -i ./payload/$d.img)
+		if [ "$erocheck" != "erofs" ];then
 		sudo python3 $binner/imgextractor.py $d.img ./
 		else
-		sudo $ebinner/erofsUnpackKt ./$d.img ./
+		sudo $ebinner/erofsUnpackRust ./$d.img ./
+		mv ./config/* ./TI_config&&rm -fr ./config
 		fi
 		rm -rf $d.img
 	done
@@ -1346,7 +1345,7 @@ if ls *.dat.1 >/dev/null 2>&1;then
 	ls *.new.dat.1 | while read t; do
 		th=$(echo "$t" | cut -d"/" -f3| cut -d"." -f1)
 		yecho "合并$th.new.dat..."
-		${su} cat ./${th}.new.dat.{1..999} 2>/dev/null >> ./${th}.new.dat > /dev/null 2>&1
+		${su} cat ./${th}.new.dat.{1..999} >> ./${th}.new.dat
 		rm -rf ./${th}.new.dat.{1..999}
 	done
 fi
