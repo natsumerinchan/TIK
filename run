@@ -155,7 +155,7 @@ ${su} cp /etc/apt/sources.list /etc/apt/sources.list.bak
 ${su} sed -i 's/archive.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
 ${su} sed -i 's/security.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
 yecho "正在更新软件列表..."
-#${su} apt-get update  -y && ${su} apt-get upgrade -y 
+${su} apt-get update  -y && ${su} apt-get upgrade -y 
 yecho "正在安装必备软件包..."
 packages="python3 python3-pip curl dialog default-jre bc android-sdk-libsparse-utils aria2 openjdk-11-jre zip p7zip-full"
 for i in $packages
