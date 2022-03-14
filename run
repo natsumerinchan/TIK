@@ -1301,7 +1301,7 @@ ROM_TYPE=VAB" >> TI_config/PROJECT_CONFIG.conf
 	for d in $dynamic_partitions
 	do
 		mv ./payload/$d.img ./
-		erocheck=$($ebinner/gettype -i ./payload/$d.img)
+		erocheck=$($ebinner/gettype -i ./$d.img)
 		if [ "$erocheck" != "erofs" ];then
 		sudo python3 $binner/imgextractor.py $d.img ./
 		else
