@@ -1028,14 +1028,10 @@ if [ "$super" == "1" ];then
 	fi
 	touch ./TI_config/super_${sf}
 	chmod 777 -R $TARGETDIR
-elif [ "$info" = "ext" ]; then
+fi
+
+if [[ $(file $PROJECT_DIR/$sf.img | cut -d ":" -f2 | grep "ext") ]]; then
 	${su} python3 $binner/imgextractor.py $PROJECT_DIR/$sf.img ./ > /dev/null
-elif [ "$info" = "erofs" ]; then
-	$ebinner/erofsUnpackRust $i ./
-	mv ./config/* ./TI_config&&rm -fr ./config
-elif [ "$info" = "sparse" ]; then
-	${su} python3 $binner/imgextractor.py $PROJECT_DIR/$sf.img ./ > /dev/null
-	rm -rf ./$sf.raw.img
 elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ]  || [ "mn" == "autoboot" ] ; then
 	${su} mkdir $sf
 	${su} $AIK/unpackimg.sh $PROJECT_DIR/$i ./ >> $PROJECT_DIR/TI_config/$i.boot
@@ -1043,14 +1039,13 @@ elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] |
 	${su} chmod 777 -R ./$sf/
 else
 	ywarn "正在尝试使用erofs解压"
-	$ebinner/erofsUnpackRust $i ./
-	if ! $ebinner/erofsUnpackRust $i ./ 2&>/dev/null ;then
+	$ebinner/erofsUnpackKt $i ./
+	if ! $ebinner/erofsUnpackKt $i ./ 2&>/dev/null ;then
 		ywarn "$i解压失败！"
 	fi
-	mv ./config/* ./TI_config&&rm -fr ./config
+	mv ./config/* ./TI_config && rm -fr ./config
 fi
 }
-
 
 function undtb()
 {
