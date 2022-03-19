@@ -1039,8 +1039,8 @@ elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] |
 	${su} chmod 777 -R ./$sf/
 else
 	ywarn "正在尝试使用erofs解压"
-	$ebinner/erofsUnpackKt $i ./
-	if ! $ebinner/erofsUnpackKt $i ./ 2&>/dev/null ;then
+	$ebinner/erofsUnpackRust $i ./
+	if ! $ebinner/erofsUnpackRust $i ./ 2&>/dev/null ;then
 		ywarn "$i解压失败！"
 	fi
 	mv ./config/* ./TI_config && rm -fr ./config
