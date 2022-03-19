@@ -1030,7 +1030,7 @@ if [ "$super" == "1" ];then
 	chmod 777 -R $TARGETDIR
 fi
 
-if [[ $(file $PROJECT_DIR/$sf.img | cut -d ":" -f2 | grep "ext") ]]; then
+if [[ $(file $i | cut -d ":" -f2 | grep "ext") ]]; then
 	${su} python3 $binner/imgextractor.py $PROJECT_DIR/$sf.img ./ > /dev/null
 elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ]  || [ "mn" == "autoboot" ] ; then
 	${su} mkdir $sf
