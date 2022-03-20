@@ -1011,6 +1011,7 @@ if [ "$info" = "sparse" ]; then
 	yecho "当前sparseimg转换为rimg中..."
 	$ebinner/simg2img $PROJECT_DIR/$sf.img $PROJECT_DIR/${sf}r.img && rm -rf ./$sf.img
 	mv $PROJECT_DIR/${sf}r.img $PROJECT_DIR/${sf}.img
+	info=$($ebinner/gettype -i $sf.img)
 	imgextra
 elif [ "$info" = "super" ];then
 	super_size=$(du -sb "./${sf}.img" | awk '{print $1}' | bc -q)
