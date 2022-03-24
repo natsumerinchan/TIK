@@ -987,7 +987,7 @@ done
 file_number=$(ls -l $dtbodir/new_dtbo_files | grep "^-" | wc -l)
 echo "当前dtbo文件个数为：$file_number "
 yecho "正在生成dtbo.img..."
-$mkdtimg_tool $dtbodir/new_dtbo_files/* create "$PROJECT_DIR/TI_out/dtbo.img" --page_size="4096" 
+$mkdtimg_tool $dtbodir/new_dtbo_files/* create "$PROJECT_DIR/TI_out/dtbo.img" --page_size="4096" "$dtbodir/dtbo_files/$dtbo_files"
 if [ $? = 0 ];then
   ysuc "生成完毕!"
   chmod 777 -R $dtbodir
@@ -1260,7 +1260,7 @@ function inunpack()
 			done
 		fi
 	elif [ "$type1" = "win000" ];then
-		${su} cat ./${sf}.win00{1..9}  >> ./${sf}.win
+		${su} $ebinner/simg2img *${sf}.win* ./${sf}.win
 		${su} python3 $binner/imgextractor.py ./${sf}.win ./
 	elif [ "$type1" = "win" ];then
 		${su} python3 $binner/imgextractor.py ./${sf}.win ./
@@ -1380,7 +1380,7 @@ if ls *.win000 >/dev/null 2>&1;then
 	ls *.win000 | while read b; do
 		bh=$(echo "$b" | cut -d"/" -f3| cut -d"." -f1)
 		yecho "合并 $bh备份文件..."
-		${su} cat ./${bh}.win{1..999} 2>/dev/null >> ./${bh}.win
+		${su} $ebinner/simg2img *${bh}.win* ./${bh}.win
 		rm -rf ./${bh}.win00{0..9}
 		sleep $sleeptime
 	done
