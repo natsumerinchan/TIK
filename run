@@ -857,12 +857,12 @@ if ls ./TI_config/*_fs_config >/dev/null 2>&1;then
 	read -p "打包文件系统: [1]ext4 [2]erofs+lz4hc [3]erofs+lz4  [4]erofs	" syscheck
 	
 	ls ./TI_config/*_fs_config | while read i; do
-	sf=$(echo "$i" | sed 's/_fs_config//g')
+	sf=$(echo "$i" | cut -d"/" -f3 | rev | cut -d'_' -f1 --complement | cut -d'_' -f1 --complement | rev)
 	if [ "$pacall" = "y" ];then
 		yecho "打包 $sf"
 		rm -f ${sf}.img > /dev/null
 		rm -f ${sf}.s.img > /dev/null
-		inpacker $sf >/dev/null 2>&1
+		inpacker $sf 
 	else
 		read -p "是否打包$sf?[y/n]	" imgcheck </dev/tty
 		if [ "$imgcheck" != "n" ];then
