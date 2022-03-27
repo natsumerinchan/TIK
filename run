@@ -187,8 +187,8 @@ echo -ne "\033[36m “$shiju”"
 echo -e "\033[36m---$author《$from》\033[0m"
 echo -e " \n"
 echo -e " >\033[33m 项目列表 \033[0m\n"
-echo -e "\033[31m   [d]  删除项目\033[0m\n"
-echo -e "   [0]  新建项目\n"
+echo -e "\033[31m   [114514]  删除项目\033[0m\n"
+echo -e "   [00]  新建项目\n"
 pro=0
 if ls TI_* >/dev/null 2>&1;then
 	for pros in $(ls -d TI_*/| sed 's/\///g')
@@ -201,15 +201,15 @@ if ls TI_* >/dev/null 2>&1;then
 	done
 fi
 echo -e "  --------------------------------------"
-echo -e "\033[33m  [j] 解压  [x] 下载  [e] 退出  [s] 设置 \033[0m"
+echo -e "\033[33m  [55] 解压  [66] 下载  [77] 退出  [88] 设置 \033[0m"
 echo -e ""
 echo -e " \n"
 read -p "  请输入序号：" op_pro
-if [ "$op_pro" == "j" ]; then
+if [ "$op_pro" == "00" ]; then
 	unfilep
-elif [ "$op_pro" == "x" ]; then
+elif [ "$op_pro" == "66" ]; then
 	xiazai
-elif [ "$op_pro" == "d" ]; then
+elif [ "$op_pro" == "114514" ]; then
 	read -p "  请输入你要删除的项目序号：" deln
 	if ls TI_* >/dev/null 2>&1;then
 		if [ $deln -gt $pro ];then
@@ -233,7 +233,7 @@ elif [ "$op_pro" == "d" ]; then
 	fi
 elif [ "$op_pro" == "0" ]; then
 	newpro
-elif [ "$op_pro" == "e" ]; then
+elif [ "$op_pro" == "77" ]; then
 	if [ "$new" == "1" ]; then
 	touch $binner/sta
 	fi
@@ -243,7 +243,7 @@ elif [ "$op_pro" == "e" ]; then
 	echo -n    如&&sleep 0.03&&echo -n 果&&sleep 0.03&&echo -n 有&&sleep 0.03&&echo -n 能&&sleep 0.03&&echo -n 力&&sleep 0.03&&echo -n ，&&sleep 0.03&&echo -n 希&&sleep 0.03&&echo -n 望&&sleep 0.03&&echo -n 您&&sleep 0.03&&echo -n 能&&sleep 0.03&&echo -n 分&&sleep 0.03&&echo -n 享&&sleep 0.03&&echo -n 并&&sleep 0.03&&echo -n 参&&sleep 0.03&&echo -n 与&&sleep 0.03&&echo -n 完&&sleep 0.03&&echo -n 善&&sleep 0.03&&echo -n 这&&sleep 0.03&&echo -n 个&&sleep 0.03&&echo -n 开&&sleep 0.03&&echo -n 源&&sleep 0.03&&echo -n 项&&sleep 0.03&&echo -n 目&&sleep 0.03&&echo ！&&sleep 2
 	clear
 	exit
-elif [ "$op_pro" == "s" ]; then
+elif [ "$op_pro" == "88" ]; then
 	settings
 elif [[ $op_pro =~ ^-?[1-9][0-9]*$ ]]; then
 	if ls TI_* >/dev/null 2>&1;then
@@ -649,14 +649,6 @@ case $op_menu in
 esac
 }
 
-function toolupdate()
-{
-ywarn "功能暂未开放！"
-sleep $sleeptime
-settings
-}
-
-
 
 # 打包
 function packmenu()
@@ -774,30 +766,30 @@ unpall=0&&unpdelall=0&&checkunp=0
 echo -e "\033[33m<-分解$type1 \033[0m" 
 
 if ls *.$type1 >/dev/null 2>&1;then
-	read -p "是否解压所有$type1 [y/n]	" unpall
-	read -p "是否解压后删除所有源文件?[y/n]	" unpdelall
+	read -p "是否解压所有$type1 [1/0]	" unpall
+	read -p "是否解压后删除所有源文件?[1/0]	" unpdelall
 	
 	ls *.${type1} | while read i; do
 	sf=$(echo "$i" | rev |cut -d'.' -f1 --complement | rev | sed 's/.new.dat//g' | sed 's/.new//g')
 	info=$($ebinner/gettype -i $i)
-	if [ "$unpall" = "y" ];then
+	if [ "$unpall" = "1" ];then
 		yecho "解包 $i"
 		rm -fr ./$sf
 		inunpack
 	else
-		read -p "是否解包$i?[y/n]	" checkunp </dev/tty
-		if [ "$checkunp" != "n" ];then
+		read -p "是否解包$i?[1/0]	" checkunp </dev/tty
+		if [ "$checkunp" != "0" ];then
 			yecho "解包 $i"
 			rm -fr ./$sf
 			inunpack
 		fi
 	fi
-	if [ "$unpcheck" = "y" ] || [ "$unpall" = "y" ];then
-		if [ "$unpdelall" = "y" ];then
+	if [ "$unpcheck" = "1" ] || [ "$unpall" = "1" ];then
+		if [ "$unpdelall" = "1" ];then
 			rm -f $i
 		else
-			read -p "是否删除$i?[y/n]	" unpdel </dev/tty
-			if [ "$unpdel" = "y" ];then
+			read -p "是否删除$i?[1/0]	" unpdel </dev/tty
+			if [ "$unpdel" = "1" ];then
 				rm -f $i
 			fi
 		fi
@@ -829,7 +821,7 @@ if [[ ! -d "TI_out" ]]; then
 mkdir $PROJECT_DIR/TI_out
 fi
 if ls ./TI_config/*.boot >/dev/null 2>&1;then
-	read -p "是否打包所有启动镜像？ [y/n]	" pacall
+	read -p "是否打包所有启动镜像？ [1/0]	" pacall
 	pacimglist=$(ls ./TI_config/*.boot)
 	ls ./TI_config/*.boot | while read i; do
 	sf=$(echo "$i" | rev |cut -d'.' -f1 --complement | rev )
@@ -839,12 +831,12 @@ if ls ./TI_config/*.boot >/dev/null 2>&1;then
 	if [ -e $AIK/ramdisk-new.cpio.gz ]; then
 		rm -rf $AIK/ramdisk-new.cpio.gz
 	fi
-		if [ "$pacall" = "y" ];then
+		if [ "$pacall" = "1" ];then
 			yecho "打包 $sf.img"
 			bootpac >/dev/null 2>&1
 		else
-		read -p "是否打包$sf.img?[y/n]	" imgcheck </dev/tty
-			if [ "$imgcheck" != "n" ];then
+		read -p "是否打包$sf.img?[1/0]	" imgcheck </dev/tty
+			if [ "$imgcheck" != "0" ];then
 				yecho "打包 $sf.img"
 				bootpac >/dev/null 2>&1
 			fi
@@ -852,20 +844,20 @@ if ls ./TI_config/*.boot >/dev/null 2>&1;then
 	done
 fi
 if ls ./TI_config/*_fs_config >/dev/null 2>&1;then
-	read -p "是否打包所有系统镜像？ [y/n]	" pacall
+	read -p "是否打包所有系统镜像？ [1/0]	" pacall
 	
 	read -p "打包文件系统: [1]ext4 [2]erofs+lz4hc [3]erofs+lz4  [4]erofs	" syscheck
 	
 	ls ./TI_config/*_fs_config | while read i; do
 	sf=$(echo "$i" | cut -d"/" -f3 | sed 's/_fs_config//g')
-	if [ "$pacall" = "y" ];then
+	if [ "$pacall" = "1" ];then
 		yecho "打包 $sf"
 		rm -f ${sf}.img > /dev/null
 		rm -f ${sf}.s.img > /dev/null
 		inpacker $sf 
 	else
-		read -p "是否打包$sf?[y/n]	" imgcheck </dev/tty
-		if [ "$imgcheck" != "n" ];then
+		read -p "是否打包$sf?[1/0]	" imgcheck </dev/tty
+		if [ "$imgcheck" != "0" ];then
 			yecho "打包 ${sf}..."
 			rm -f ${sf}.img > /dev/null
 			inpacker $sf > /dev/null

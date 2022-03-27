@@ -39,8 +39,8 @@ case $plat in
     fi;
   ;;
   linux)
-    cpio=cpio;
-    [ "$(cpio --version | head -n1 | rev | cut -d\  -f1 | rev)" = "2.13" ] && cpiowarning=1;
+    cpio=$bin/$arch/cpio;
+    [ "$($cpio --version | head -n1 | rev | cut -d\  -f1 | rev)" = "2.13" ] && cpiowarning=1;
     statarg="-c %U";
   ;;
 esac;
