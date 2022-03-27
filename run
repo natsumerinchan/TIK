@@ -824,7 +824,7 @@ if ls ./TI_config/*.boot >/dev/null 2>&1;then
 	read -p "是否打包所有启动镜像？ [1/0]	" pacall
 	pacimglist=$(ls ./TI_config/*.boot)
 	ls ./TI_config/*.boot | while read i; do
-	sf=$(echo "$i" | rev |cut -d'.' -f1 --complement | rev )
+	sf=$(echo "$i" | cut -d"/" -f3 | rev |cut -d'.' -f1 --complement | rev )
 	rm -rf $AIK/split_img
 	rm -rf $AIK/ramdisk
 	rm -rf $AIK/*.img
