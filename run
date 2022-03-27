@@ -205,11 +205,11 @@ echo -e "\033[33m  [55] 解压  [66] 下载  [77] 退出  [88] 设置 \033[0m"
 echo -e ""
 echo -e " \n"
 read -p "  请输入序号：" op_pro
-if [ "$op_pro" == "00" ]; then
+if [ "$op_pro" == "55" ]; then
 	unfilep
 elif [ "$op_pro" == "66" ]; then
 	xiazai
-elif [ "$op_pro" == "114514" ]; then
+elif [ "$op_pro" == "00" ]; then
 	read -p "  请输入你要删除的项目序号：" deln
 	if ls TI_* >/dev/null 2>&1;then
 		if [ $deln -gt $pro ];then
