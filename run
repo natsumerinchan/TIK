@@ -1,8 +1,6 @@
 #!/bin/bash
 LOCALDIR="$(cd $(dirname $0); pwd)"
-binner=$LOCALDIR/bin
-source $binner/settings
-show() { source $binner/show; }
+binner=$LOCALDIR/bin && source $binner/settings && show() { source $binner/show; }
 yecho(){ echo -e "\033[36m[`date '+%H:%M:%S'`]${1}\033[0m" ; }	#显示打印
 ywarn(){ echo -e "\033[31m${1}\033[0m" ; }	#显示打印
 ysuc(){ echo -e "\033[32m[`date '+%H:%M:%S'`]${1}\033[0m" ; }	#显示打印
@@ -15,7 +13,6 @@ function timeout() {
 waitsec=2
 ( $* ) & pid=$!
 ( sleep $waitsec && kill -HUP $pid ) 2>/dev/null & watchdog=$!
-# if command finished
 if wait $pid 2>/dev/null; then
     pkill -HUP -P $watchdog
     wait $watchdog
@@ -23,10 +20,7 @@ fi
 }
 
 
-dyunboot=1
-HOST=$(uname)
-platform=$(uname -m)
-AIK="$binner/AIK"
+HOST=$(uname) && platform=$(uname -m) && AIK="$binner/AIK"
 partitions="
 system
 vendor
@@ -35,7 +29,6 @@ system_ext
 vendor_dlkm
 odm"
 export ebinner=$binner/$HOST/$platform
-export PS1="[\e[32;1m\u@\h \W]\\$"
  
 if [ "$platform" = "aarch64" ];then
 command+=" -b /sdcard"
@@ -49,10 +42,9 @@ fi
 function menu()
 {
 clear
-PROJECT_DIR=$LOCALDIR/$project
-cd $PROJECT_DIR
+PROJECT_DIR=$LOCALDIR/$project && cd $PROJECT_DIR
 PROCONFIG=$PROJECT_DIR/TI_config/PROJECT_CONFIG.conf
-clear
+
 if [[ ! -d "TI_config" ]]; then
 ywarn "项目已损坏！" && menu
 fi
@@ -67,20 +59,26 @@ else
 	SYSTEM_DIR=0
 	ywarn "  非完整ROM项目"
 fi
+
 if [[ -f $SYSTEM_DIR/build.prop ]]; then
-vend=$(getprop "ro.product.manufacturer")
-version=$(getprop "ro.build.version.release=")
-Model=$(getprop "ro.product.mod_device")
-if ! grep -q "ro.product.mod_device" $SYSTEM_DIR/build.prop;then
-	Model=$(getprop "ro.product.model")
-fi	
-echo -en "\033[36m  机型：${vend} ${Model}  系统版本：Android ${version}\033[0m"
-if grep -q "ro.miui." $SYSTEM_DIR/build.prop;then
-miuiver=$(getprop "ro.miui.ui.version.code")
-devver=$(getprop ro.system.build.version.incremental)
-echo -e "\033[36m  | MIUI $miuiver $devver\033[0m"
+	vend=$(getprop "ro.product.manufacturer")
+	version=$(getprop "ro.build.version.release=")
+	Model=$(getprop "ro.product.mod_device")
+	
+	if ! grep -q "ro.product.mod_device" $SYSTEM_DIR/build.prop;then
+		Model=$(getprop "ro.product.model")
+	fi
+	
+	echo -en "\033[36m  机型：${vend} ${Model}  系统版本：Android ${version}\033[0m"
+	
+	if grep -q "ro.miui." $SYSTEM_DIR/build.prop;then
+		miuiver=$(getprop "ro.miui.ui.version.code")
+		devver=$(getprop ro.system.build.version.incremental)
+		echo -e "\033[36m  | MIUI $miuiver $devver\033[0m"
+	fi
+	
 fi
-fi
+
 echo  
 echo -e "\033[31m    1> Main Menu       2> Unpack Menu\033[0m\n" 
 echo -e "\033[32m    3> Repack Menu     4> Plug-ins\033[0m\n" 
@@ -88,7 +86,7 @@ echo -e "\033[33m    5> Build ROM       6> Move Files\033[0m\n"
 echo  
 read -p "    请输入编号: " op_menu
 case $op_menu in
-    1)
+		1)
         promenu
         ;;
 		2)
@@ -127,7 +125,9 @@ clear
 cd $LOCALDIR
 if [[ ! -f "$binner/depment" ]]; then
 	PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple/
+	
 	echo -e "\033[34m $(cat $binner/banner) \033[0m"
+	
 	if [[ $(which id) ]]; then
 		if [[ $(id -u) = "0" ]]; then
 		userid="root"
@@ -135,6 +135,7 @@ if [[ ! -f "$binner/depment" ]]; then
 	elif [[ $EUID = "0" ]]; then
 		userid="root"
 	fi
+	
 	if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
 		clear
 		ywarn "工具不允许在root环境下运行!"
@@ -144,9 +145,10 @@ if [[ ! -f "$binner/depment" ]]; then
 	if [ "$platform" = "aarch64" ] && [[ ! -d "/sdcard/TIK" ]]; then
 		mkdir /sdcard/TIK
 	fi
+	
 	yecho "开始配置环境..."
 	sleep $sleeptime
-	yecho "更换国内清华源..."
+	yecho "更换清华源..."
 	${su} cp /etc/apt/sources.list /etc/apt/sources.list.bak
 	${su} sed -i 's/archive.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
 	${su} sed -i 's/security.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
@@ -159,14 +161,14 @@ if [[ ! -f "$binner/depment" ]]; then
 		yecho "安装$i..."
 		${su} apt-get install $i -y
 	done
+	${su} apt --fix-broken install
+	${su} apt update --fix-missing
 	pip3 install --upgrade pip -i $PIP_MIRROR
 	pip3 install pycryptodome -i $PIP_MIRROR
 	pip3 install docopt -i $PIP_MIRROR
 	pip3 install requests -i $PIP_MIRROR
 	pip3 install beautifulsoup4 -i $PIP_MIRROR
 	pip3 install --ignore-installed pyyaml -i $PIP_MIRROR
-	${su} apt --fix-broken install
-	${su} apt update --fix-missing
 	touch $binner/depment
 fi
 content=$(timeout curl -s https://v1.jinrishici.com/all.json)
@@ -187,8 +189,8 @@ echo -ne "\033[36m “$shiju”"
 echo -e "\033[36m---$author《$from》\033[0m"
 echo -e " \n"
 echo -e " >\033[33m 项目列表 \033[0m\n"
-echo -e "\033[31m   [114514]  删除项目\033[0m\n"
-echo -e "   [00]  新建项目\n"
+echo -e "\033[31m   [00]  删除项目\033[0m\n"
+echo -e "   [0]  新建项目\n"
 pro=0
 if ls TI_* >/dev/null 2>&1;then
 	for pros in $(ls -d TI_*/| sed 's/\///g')
@@ -218,7 +220,7 @@ elif [ "$op_pro" == "00" ]; then
 			promenu
 		else
 			eval "delproject=\$pro$deln"
-			read -p "  真假？？[1/0]" delr
+			read -p "  确认删除？[1/0]" delr
 			if [ "$delr" == "1" ];then
 				rm -fr $delproject
 				ysuc "  删除成功！"
@@ -234,13 +236,6 @@ elif [ "$op_pro" == "00" ]; then
 elif [ "$op_pro" == "0" ]; then
 	newpro
 elif [ "$op_pro" == "77" ]; then
-	if [ "$new" == "1" ]; then
-	touch $binner/sta
-	fi
-	clear
-	echo  
-	echo -n  感&&sleep 0.03&&echo -n 谢&&sleep 0.03&&echo -n 使&&sleep 0.2&&echo -n 用&&sleep 0.03&&echo -n T&&sleep 0.03&&echo -n I&&sleep 0.03&&echo -n K&&sleep 0.03&&echo 全能工具箱！&&sleep 0.03
-	echo -n    如&&sleep 0.03&&echo -n 果&&sleep 0.03&&echo -n 有&&sleep 0.03&&echo -n 能&&sleep 0.03&&echo -n 力&&sleep 0.03&&echo -n ，&&sleep 0.03&&echo -n 希&&sleep 0.03&&echo -n 望&&sleep 0.03&&echo -n 您&&sleep 0.03&&echo -n 能&&sleep 0.03&&echo -n 分&&sleep 0.03&&echo -n 享&&sleep 0.03&&echo -n 并&&sleep 0.03&&echo -n 参&&sleep 0.03&&echo -n 与&&sleep 0.03&&echo -n 完&&sleep 0.03&&echo -n 善&&sleep 0.03&&echo -n 这&&sleep 0.03&&echo -n 个&&sleep 0.03&&echo -n 开&&sleep 0.03&&echo -n 源&&sleep 0.03&&echo -n 项&&sleep 0.03&&echo -n 目&&sleep 0.03&&echo ！&&sleep 2
 	clear
 	exit
 elif [ "$op_pro" == "88" ]; then
@@ -273,7 +268,6 @@ fi
 function unfilep()
 {
 clear
-super=0
 cd $Sourcedir
 show
 cd $LOCALDIR
@@ -291,18 +285,16 @@ if [ -f "$i0" ]; then
 		project="$project"-`date "+%Y%m%d%H%M%S"`
 		ywarn "项目已存在！自动命名为：$project"
 	fi
+	PROJECT_DIR=$LOCALDIR/$project && mkdir $PROJECT_DIR
 	echo 创建项目:$project成功！
-	mkdir $LOCALDIR/$project
-	PROJECT_DIR=$LOCALDIR/$project
-	if [[ -f $LOCALDIR/$i ]]; then
-		yecho "检测在项目根目录，开始解压"
-	else
-		yecho "正在迁移$i0到工具目录..."
-	${su} mv $i0 $LOCALDIR
+	if [[ ! -f $LOCALDIR/$i ]]; then
+		yecho "移动$i0到工具目录..."
+		${su} mv $i0 $LOCALDIR
 	fi
 	cd $PROJECT_DIR
 	#万能解包
 	type1=$(echo "$i" | rev | cut -d"/" -f1| cut -d'.' -f1 | rev)
+	info=$($ebinner/gettype -i $i0)
 	if [ "$type1" == "zip" ];then
 		yecho "解压刷机包中..."
 		7z x "$LOCALDIR/$i" -o"$LOCALDIR/$project/" > /dev/null
@@ -450,7 +442,6 @@ echo -e "\033[31m   [3] Super.img镜像卡刷包\033[0m\n"
 echo -e "\033[34m   [4] Fastboot线刷包()\033[0m\n" 
 read -p "  暂未开发完毕！" null
 menu
-echo  
 }
 
 function packrom1()
@@ -489,32 +480,32 @@ function movedir()
 clear
 echo -e "\033[31m<-移动项目文件 \033[0m" 
 echo "移动本目录下部分文件至/sdcard/$mydir/$project"
-fi=0
+fil=0
 echo -e "   [0]- 返回菜单\n"
 if ls >/dev/null 2>&1;then
 	for fis in $(ls)
 	do 
 	if [ -d "./$fis" ];then
-	fi=$((fi+1))
+	fil=$((fi+1))
 	if [ "$fis" == "TI_out" ];then
-	echo "   [$fi]- $fis"
+	echo "   [$fil]- $fis"
 	elif [ -d "$fis" ];then
-	echo -e "\033[31m   [$fi]- $fis\n\033[0m"
+	echo -e "\033[31m   [$fil]- $fis\n\033[0m"
 	fi
-	eval "fi$fi=$fis" 
+	eval "fi$fil=$fis" 
 	fi
 	done
 fi
 echo -e "-------------------------------------------\n"
 read -p "请输入序号：" op
 if [[ $op =~ ^-?[1-9][0-9]*$ ]]; then
-if [ $op -gt $fi ];then
+if [ $op -gt $fil ];then
 ywarn "请输入正确编号!"
 sleep $sleeptime
 menu
 else
 
-eval "mof=\$fi$op"
+eval "mof=\$fil$op"
 if [[ ! -d "/sdcard/$mydir/$project" ]]; then
 mkdir /sdcard/$mydir/$project
 fi
@@ -709,6 +700,7 @@ echo "  5 > 分解 Bin       6 > 分解 Win "
 echo "  7 > 分解 DTBO      8 > 分解 DTB"
 echo "  9 > 分解 OFP       10> 合并分段dat并分解"
 echo "  11> 分解 Ops       12> 合并分段win并分解"
+echo "  13> 合并分段super并分解"
 echo "  -------------------------------- " 
 read -p "  请输入编号: " op_menu
 case $op_menu in
@@ -748,6 +740,9 @@ case $op_menu in
 		12)
         type1=win000&&unpacker
         ;;
+		12)
+        unsuper2
+        ;;
         *)
         ywarn "请输入正确编号！"
 		sleep $sleeptime
@@ -761,20 +756,18 @@ function unpacker()
 {
 clear
 cd $LOCALDIR && cd $project
-unpall=0&&unpdelall=0&&checkunp=0
+unpall=0&&checkunp=0
 
 echo -e "\033[33m<-分解$type1 \033[0m" 
 
-if ls *.$type1 >/dev/null 2>&1;then
+if ls $type1 >/dev/null 2>&1;then
 	read -p "是否解压所有$type1 [1/0]	" unpall
-	read -p "是否解压后删除所有源文件?[1/0]	" unpdelall
 	
-	ls *.${type1} | while read i; do
+	ls ${type1} | while read i; do
 	sf=$(echo "$i" | rev |cut -d'.' -f1 --complement | rev | sed 's/.new.dat//g' | sed 's/.new//g')
 	info=$($ebinner/gettype -i $i)
 	if [ "$unpall" = "1" ];then
 		yecho "解包 $i"
-		rm -fr ./$sf
 		inunpack
 	else
 		read -p "是否解包$i?[1/0]	" checkunp </dev/tty
@@ -782,16 +775,6 @@ if ls *.$type1 >/dev/null 2>&1;then
 			yecho "解包 $i"
 			rm -fr ./$sf
 			inunpack
-		fi
-	fi
-	if [ "$unpcheck" = "1" ] || [ "$unpall" = "1" ];then
-		if [ "$unpdelall" = "1" ];then
-			rm -f $i
-		else
-			read -p "是否删除$i?[1/0]	" unpdel </dev/tty
-			if [ "$unpdel" = "1" ];then
-				rm -f $i
-			fi
 		fi
 	fi
 	done
@@ -818,31 +801,28 @@ echo -e "\033[33m<-打包Img \033[0m"
 fi
 
 if [[ ! -d "TI_out" ]]; then
-mkdir $PROJECT_DIR/TI_out
+	mkdir $PROJECT_DIR/TI_out
 fi
-if ls ./TI_config/*.boot >/dev/null 2>&1;then
+
+if ls ./TI_config/*.info >/dev/null;then
 	read -p "是否打包所有启动镜像？ [1/0]	" pacall
-	pacimglist=$(ls ./TI_config/*.boot)
-	ls ./TI_config/*.boot | while read i; do
-	sf=$(echo "$i" | cut -d"/" -f3 | rev |cut -d'.' -f1 --complement | rev )
-	rm -rf $AIK/split_img
-	rm -rf $AIK/ramdisk
-	rm -rf $AIK/*.img
+	ls ./TI_config/*.info | while read i; do
+	sf=$(echo "$i" | cut -d"/" -f3 | cut -d'.' -f1 )
+	rm -rf $AIK/split_img && rm -rf $AIK/ramdisk && rm -rf $AIK/*.img
 	if [ -e $AIK/ramdisk-new.cpio.gz ]; then
 		rm -rf $AIK/ramdisk-new.cpio.gz
 	fi
 		if [ "$pacall" = "1" ];then
-			yecho "打包 $sf.img"
-			bootpac >/dev/null 2>&1
+			bootpac $sf >/dev/null
 		else
 		read -p "是否打包$sf.img?[1/0]	" imgcheck </dev/tty
 			if [ "$imgcheck" != "0" ];then
-				yecho "打包 $sf.img"
-				bootpac >/dev/null 2>&1
+				bootpac $sf >/dev/null
 			fi
 		fi
 	done
 fi
+
 if ls ./TI_config/*_fs_config >/dev/null 2>&1;then
 	read -p "是否打包所有系统镜像？ [1/0]	" pacall
 	
@@ -864,8 +844,6 @@ if ls ./TI_config/*_fs_config >/dev/null 2>&1;then
 		fi
 	fi
 	done
-else
-ywarn "没有可打包文件！"
 fi
 packmenu
 }
@@ -884,11 +862,11 @@ inpacker(){
 	#分区大小处理
 	zj=`du -sb $name | awk {'print $1'}`
 	if [ $zj -gt 10000000 ] ; then
-		img_size0=`echo "$zj * 1.0755" |bc`
+		img_size0=`echo "$zj * 1.0758" |bc`
 	else
 		img_size0=`echo "$zj * 1.2" |bc`  
 	fi
-	img_size=`echo $img_size0|sed 's/\..*//g'`
+	img_size=`echo $img_size0 | sed 's/\..*//g'`
 	size=`echo "$img_size0 / $BLOCKSIZE" |bc`
 	echo $img_size >$PROJECT_DIR/TI_config/${name}_size.txt
 	if [[ -f "dynamic_partitions_op_list" ]]; then
@@ -904,8 +882,8 @@ inpacker(){
 	elif [ "$syscheck" = "4" ];then
 	${su} $ebinner/mkfs.erofs --mount-point $mount_path --fs-config-file $fs_config --file-contexts $file_contexts $out_img $in_files > /dev/null
 	else
-	$ebinner/mke2fs -O ^has_journal -L $name -I 256 -M $mount_path -m 0 -t ext4 -b $BLOCKSIZE $out_img $size > /dev/null
-    ${su} $ebinner/e2fsdroid -e -T $UTC -C $fs_config -S $file_contexts -f $in_files -a $mount_path $out_img > /dev/null
+		$ebinner/mke2fs -O ^has_journal -L $name -I 256 -M $mount_path -m 0 -t ext4 -b $BLOCKSIZE $out_img $size > /dev/null
+		${su} $ebinner/e2fsdroid -e -T $UTC -C $fs_config -S $file_contexts -f $in_files -a $mount_path $out_img > /dev/null
 	fi
 	if [ "$dat" = "1" ];then
 		$ebinner/img2simg ./TI_out/${name}.img $PROJECT_DIR/TI_out/${name}.s.img > /dev/null
@@ -950,7 +928,9 @@ for dtbo_files in $dtbo_files_name ;do
   [ $? != 0 ] && ywarn "反编译$dtbo_files失败" && unpmenu
 done
 ysuc "解压完成!"
-chmod 777 -R $dtbodir
+if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
+	chmod 777 -R $dtbodir
+fi
 unpmenu
 }
 
@@ -982,7 +962,9 @@ yecho "正在生成dtbo.img..."
 $mkdtimg_tool $dtbodir/new_dtbo_files/* create "$PROJECT_DIR/TI_out/dtbo.img" --page_size="4096" "$dtbodir/dtbo_files/$dtbo_files"
 if [ $? = 0 ];then
   ysuc "生成完毕!"
-  chmod 777 -R $dtbodir
+if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
+	chmod 777 -R $dtbodir
+fi
 else
   ywarn "dtbo.img 生成失败!"
 fi
@@ -991,9 +973,9 @@ packmenu
 }
 
 
-function bootpac()
+bootpac()
 {
-yecho "正在生成$sf.img..."
+sf=${1}
 cp -afrv $PROJECT_DIR/$sf/* $AIK > /dev/null
 $AIK/repackimg.sh --forceelf > /dev/null
 if [ -e $AIK/unpadded-new.img ];then
@@ -1006,7 +988,6 @@ rm -rf $AIK/ramdisk
 if [ -e $AIK/ramdisk-new.cpio.gz ]; then
   rm -rf $AIK/ramdisk-new.cpio.gz
 fi
-sleep $sleeptime
 }
 
 
@@ -1029,21 +1010,58 @@ elif [ "$info" = "super" ];then
 	else
 		ysuc "super输出至 $TARGETDIR"
 	fi
+if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
 	chmod 777 -R $TARGETDIR
+fi
 	elif [ "$info" = "ext" ]; then
 		${su} python3 $binner/imgextractor.py $PROJECT_DIR/$sf.img ./ > /dev/null
+	if [ $? != "0" ];then
+		ywarn "解压失败"
+	fi
 	elif [ "$info" = "erofs" ]; then
 		$ebinner/erofsUnpackRust $i ./
 		mv ./config/* ./TI_config&&rm -fr ./config
+	if [ $? != "0" ];then
+		ywarn "解压失败"
+	fi
 elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ]  || [ "mn" == "autoboot" ] ; then
 	${su} mkdir $sf
-	${su} $AIK/unpackimg.sh $PROJECT_DIR/$i ./ >> $PROJECT_DIR/TI_config/$i.boot
+	${su} $AIK/unpackimg.sh $PROJECT_DIR/$i ./ >> $PROJECT_DIR/TI_config/$sf.info
 	${su} mv $AIK/ramdisk $PROJECT_DIR/$sf&&${su} mv $AIK/split_img $PROJECT_DIR/$sf
+	if [ $? != "0" ];then
+		ywarn "解压失败"
+	fi
+if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
 	${su} chmod 777 -R ./$sf
+fi
 else
 	ywarn "未知格式！请附带文件提交issue!"
 	sleep $sleeptime
 fi
+}
+
+function unsuper2()
+{
+	echo "目录下文件："&&ls
+	read -p "  请输入需合并镜像名（空格 可通配符）：" suis
+	read -p "  请输入输出镜像名：" suib
+	$ebinner/simg2img $suis $suib.img
+	if [ $? != "0" ];then
+		ywarn "解压失败"
+	else
+	ysuc "合并成功！开始解包..."
+	super_size=$(du -sb "$suib.img" | awk '{print $1}' | bc -q)
+	yecho "super分区大小: $super_size bytes  解压中..."
+	mkdir super
+	TARGETDIR=./super
+	$ebinner/lpunpack $PROJECT_DIR/${sf}.img $TARGETDIR
+	if [ $? != "0" ];then
+		ywarn "解压失败"
+	else
+		ysuc "super输出至 $TARGETDIR"
+	fi
+	fi
+	unpmenu
 }
 
 function undtb()
@@ -1066,7 +1084,9 @@ $dtc -@ -I "dtb" -O "dts" "./dtb" -o "$dtbdir/dts_files/dts" > /dev/null 2>&1
 [ $? != 0 ] && ywarn "反编译dtb失败" && unpmenu
 ysuc "反编译完成!"
 sleep $sleeptime
-chmod 777 -R $dtbdir
+if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
+	chmod 777 -R $dtbdir
+fi
 unpmenu
 }
 
@@ -1092,7 +1112,9 @@ done
 find $dtbdir/new_dtb_files -name "dtb*" -exec cat {} > $PROJECT_DIR/TI_out/dtb \;
 ysuc "回编译完成！"
 sleep $sleeptime
-chmod 777 -R $dtbdir
+if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
+	chmod 777 -R $dtbdir
+fi
 packmenu
 }
 
@@ -1202,6 +1224,10 @@ fi
 read -p "是否打包为sparse镜像？[1/0]	" sparse
 read -p "请输入super分区大小（字节数，常见9126805504  10200547328 16106127360）	" supersize
 read -p "请输入输出镜像名:	" supername
+if [[ -d "$supername.img" ]]; then
+	supername="$supername"-`date "+%Y%m%d%H%M%S"`
+	ywarn "已存在！自动命名为：$supername"
+fi
 insuper $PROJECT_DIR/super $supername
 packmenu
 }
@@ -1263,7 +1289,9 @@ function inunpack()
 	else
 		ywarn "未知格式！"
 	fi
+if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
 	${su} chmod 777 -R $sf > /dev/null 2>&1
+fi
 }
 
 
@@ -1297,9 +1325,9 @@ ROM_TYPE=VAB" >> TI_config/PROJECT_CONFIG.conf
 		mv ./payload/$d.img ./
 		erocheck=$($ebinner/gettype -i ./$d.img)
 		if [ "$erocheck" != "erofs" ];then
-		sudo python3 $binner/imgextractor.py $d.img ./
+		${su} python3 $binner/imgextractor.py $d.img ./
 		else
-		sudo $ebinner/erofsUnpackRust ./$d.img ./
+		${su} $ebinner/erofsUnpackRust ./$d.img ./
 		mv ./config/* ./TI_config&&rm -fr ./config
 		fi
 		rm -rf $d.img
@@ -1397,7 +1425,10 @@ fi
 	fi
 	
 fi
+
+if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
 ${su} chmod 777 -R *
+fi
 
 if [[ -f $PROJECT_DIR/system/system/build.prop ]]; then
 	SYSTEM_DIR="$PROJECT_DIR/system/system"
@@ -1427,7 +1458,9 @@ function insuper()
 Imgdir=$1
 Supername=$2
 group_size=0
+if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
 ${su} chmod -R 777 $Imgdir
+fi
 
 find $Imgdir -name "*" -type f -size 0c | xargs -n 1 rm -f
 
@@ -1474,7 +1507,6 @@ if ( $ebinner/lpmake $superpa 2>&1 );then
 else
     ywarn "创建super.img失败！"
 fi
-type1=0
 sleep $sleeptime
 }
 
