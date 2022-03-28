@@ -140,7 +140,6 @@ if [[ ! -f "$binner/depment" ]]; then
 		clear
 		ywarn "不建议在系统sudo下运行!"
 		sleep $sleeptime
-		exit
 	fi
 	if [ "$platform" = "aarch64" ] && [[ ! -d "/sdcard/TIK" ]]; then
 		mkdir /sdcard/TIK
