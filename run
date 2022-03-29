@@ -82,7 +82,7 @@ fi
 echo  
 echo -e "\033[31m    1> Main Menu       2> Unpack Menu\033[0m\n" 
 echo -e "\033[32m    3> Repack Menu     4> Plug-ins\033[0m\n" 
-echo -e "\033[33m    5> Build ROM       6> Move Files\033[0m\n" 
+echo -e "\033[33m    5> Move Files\033[0m\n" 
 echo  
 read -p "    请输入编号: " op_menu
 case $op_menu in
@@ -99,9 +99,6 @@ case $op_menu in
         subbed
         ;;
 		5)
-        packzip
-        ;;
-		6)
 		if [ "$platform" = "aarch64" ];then
 			movedir
 		else
@@ -437,49 +434,6 @@ else
 fi
 }
 
-
-function packzip()
-{
-clear
-echo -e "\033[33m<-打包ROM \033[0m"   
-echo -e "\033[33m   [1] 压缩TI_out文件夹\033[0m\n" 
-echo -e "\033[32m   [2] A_only分镜像卡刷包\033[0m\n" 
-echo -e "\033[31m   [3] Super.img镜像卡刷包\033[0m\n" 
-echo -e "\033[34m   [4] Fastboot线刷包()\033[0m\n" 
-read -p "  暂未开发完毕！" null
-menu
-}
-
-function packrom1()
-{
-clear
-echo -e "\033[33m<-打包ZIP \033[0m" 
-echo "将会打包TI_out中已有文件为一个ZIP,非常智障"
-if [[ ! -d "TI_out" ]]; then
-	ywarn "TI_out是空的！"
-	sleep $sleeptime
-else
-
-read -p "请输入生成ROM名称(非中文)：" romname
-if test -z "$romname";then
-  ywarn "键入为空！"
-  sleep $sleeptime
-else
-	yecho "正在打包：$romname.zip ..."
-	7za a -tzip -r $PROJECT_DIR/TI_out/$romname.zip $PROJECT_DIR/TI_out/*
-	ysuc "打包完成！"
-fi
-
-fi
-sleep $sleeptime
-menu
-}
-
-
-function packrom2()
-{
-clear
-}
 
 function movedir()
 {
@@ -1338,7 +1292,6 @@ ROM_TYPE=VAB" >> TI_config/PROJECT_CONFIG.conf
 		fi
 		rm -rf $d.img
 	done
-	mn=autoboot
 	for m in $android_bootimg_partitons
 	do
 		i=$m.img
