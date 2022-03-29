@@ -746,7 +746,7 @@ case $op_menu in
 		12)
         type1=win000&&unpacker
         ;;
-		12)
+		13)
         unsuper2
         ;;
         *)
@@ -766,10 +766,10 @@ unpall=0&&checkunp=0
 
 echo -e "\033[33m<-分解$type1 \033[0m" 
 
-if ls $type1 >/dev/null 2>&1;then
+if ls *.${type1} >/dev/null 2>&1;then
 	read -p "是否解压所有$type1 [1/0]	" unpall
 	
-	ls ${type1} | while read i; do
+	ls *.${type1} | while read i; do
 	sf=$(echo "$i" | rev |cut -d'.' -f1 --complement | rev | sed 's/.new.dat//g' | sed 's/.new//g')
 	info=$($ebinner/gettype -i $i)
 	if [ "$unpall" = "1" ];then
@@ -1030,7 +1030,7 @@ fi
 	if [ $? != "0" ];then
 		ywarn "解压失败"
 	fi
-elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ]  || [ "mn" == "autoboot" ] ; then
+elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ]  || [ "$sf" == "autoboot" ] ; then
 	${su} mkdir $sf
 	${su} $AIK/unpackimg.sh $PROJECT_DIR/$i ./ >> $PROJECT_DIR/TI_config/$sf.info
 	${su} mv $AIK/ramdisk $PROJECT_DIR/$sf&&${su} mv $AIK/split_img $PROJECT_DIR/$sf
