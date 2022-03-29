@@ -1030,7 +1030,7 @@ fi
 	if [ $? != "0" ];then
 		ywarn "解压失败"
 	fi
-elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ]  || [ "mn" == "autoboot" ] ; then
+elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ]  || [ "$sf" == "autoboot" ] ; then
 	${su} mkdir $sf
 	${su} $AIK/unpackimg.sh $PROJECT_DIR/$i ./ >> $PROJECT_DIR/TI_config/$sf.info
 	${su} mv $AIK/ramdisk $PROJECT_DIR/$sf&&${su} mv $AIK/split_img $PROJECT_DIR/$sf
