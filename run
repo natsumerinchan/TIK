@@ -43,7 +43,6 @@ function menu()
 {
 clear
 PROJECT_DIR=$LOCALDIR/$project && cd $PROJECT_DIR
-PROCONFIG=$PROJECT_DIR/TI_config/PROJECT_CONFIG.conf
 
 if [[ ! -d "TI_config" ]]; then
 ywarn "项目已损坏！" && menu
@@ -660,7 +659,7 @@ echo "  5 > 分解 Bin       6 > 分解 Win "
 echo "  7 > 分解 DTBO      8 > 分解 DTB"
 echo "  9 > 分解 OFP       10> 合并分段dat并分解"
 echo "  11> 分解 Ops       12> 合并分段win并分解"
-echo "  13> 合并分段super并分解"
+echo "  13> 分解 Ozip      14> 合并分段super并分解"
 echo "  -------------------------------- " 
 read -p "  请输入编号: " op_menu
 case $op_menu in
@@ -701,6 +700,9 @@ case $op_menu in
         type1=win000&&unpacker
         ;;
 		13)
+        type1=ozip&&unpacker
+        ;;
+		14)
         unsuper2
         ;;
         *)
@@ -820,6 +822,7 @@ inpacker(){
 	out_img="${PROJECT_DIR}/TI_out/${name}.img"
 	in_files="${PROJECT_DIR}/${name}"
 	#分区大小处理
+	size0=$(cat $PROJECT_DIR/TI_config/${name}_size.txt)
 	zj=`du -sb $name | awk {'print $1'}`
 	if [ $zj -gt 10000000 ] ; then
 		img_size0=`echo "$zj * 1.0758" |bc`
@@ -827,8 +830,13 @@ inpacker(){
 		img_size0=`echo "$zj * 1.2" |bc`  
 	fi
 	img_size=`echo $img_size0 | sed 's/\..*//g'`
-	size=`echo "$img_size0 / $BLOCKSIZE" |bc`
-	echo $img_size >$PROJECT_DIR/TI_config/${name}_size.txt
+	size=`echo "$img_size0 / $BLOCKSIZE" |bc` && addsize=`echo $size - $size0`
+	read -p "是否增加size$addsize,以防打包失败？[1/0]" sizecheck
+	if [ "$sizecheck" = "1" ];then
+		echo $img_size >$PROJECT_DIR/TI_config/${name}_size.txt
+	else
+		size=$size0
+	fi
 	if [[ -f "dynamic_partitions_op_list" ]]; then
 	sed -i "s/resize ${name}\s.*/resize ${name} $img_size/" $PROJECT_DIR/dynamic_partitions_op_list
 	fi
@@ -984,10 +992,10 @@ fi
 	if [ $? != "0" ];then
 		ywarn "解压失败"
 	fi
-elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ]  || [ "$sf" == "autoboot" ] ; then
+elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ] ; then
 	${su} mkdir $sf
 	${su} $AIK/unpackimg.sh $PROJECT_DIR/$i ./ >> $PROJECT_DIR/TI_config/$sf.info
-	${su} mv $AIK/ramdisk $PROJECT_DIR/$sf&&${su} mv $AIK/split_img $PROJECT_DIR/$sf
+	${su} mv $AIK/ramdisk $PROJECT_DIR/$sf && ${su} mv $AIK/split_img $PROJECT_DIR/$sf
 	if [ $? != "0" ];then
 		ywarn "解压失败"
 	fi
@@ -1219,6 +1227,8 @@ function inunpack()
 		else
 			python3 $binner/oppo_decrypt/ofp_qc_decrypt.py $PROJECT_DIR/$file $PROJECT_DIR/$sf
 		fi
+	elif [ "$type1" = "ozip" ];then
+		python3 $binner/oppo_decrypt/ozipdecrypt.py $PROJECT_DIR/$file
 	elif [ "$type1" = "ops" ];then
 		python3 $binner/oppo_decrypt/ofp_mtk_decrypt.py $PROJECT_DIR/$file $PROJECT_DIR/$sf
 	elif [ "$type1" = "bin" ];then
@@ -1258,8 +1268,7 @@ fi
 # 自动解压
 function autounpack()
 {
-mkdir TI_config&&touch TI_config/PROJECT_CONFIG.conf
-echo "PROJECT_NAME=$project" >> TI_config/PROJECT_CONFIG.conf
+mkdir TI_config
 yecho "自动解包阶段开始，将自动删除源文件！"
 # payload.bin解包
 if [ -f "./payload.bin" ]; then
@@ -1267,49 +1276,33 @@ if [ -f "./payload.bin" ]; then
 	$ebinner/payload-dumper-go ./payload.bin -o ./payload
 	yecho "payload.bin解包完成！"
 	sleep $sleeptime
-	rm -rf payload.bin&&rm -rf care_map.pb&&rm -rf payload_properties.txt
-	echo "#dynamic_partitions_info
-ROM_TYPE=VAB" >> TI_config/PROJECT_CONFIG.conf
-	read -p "请输入动态分区列表(空格隔开): " dynamic_partitions
-	echo "dynamic_partitions=$dynamic_partitions" >> TI_config/PROJECT_CONFIG.conf
-	read -p "请输入启动镜像列表(空格隔开): " android_bootimg_partitons
-	echo "android_bootimg_partitons=$android_bootimg_partitons" >> TI_config/PROJECT_CONFIG.conf
-	read -p "请输入Super分区大小(字节数;可跳过): " super_partition_size
-	if test -z "$projec";then
-		super_partition_size=0
-	else  
-		echo "super_partition_size=$super_partition_size" >> TI_config/PROJECT_CONFIG.conf
-	fi
-	for d in $dynamic_partitions
+	rm -rf payload.bin && rm -rf care_map.pb && rm -rf payload_properties.txt
+	for d in $(ls payload/*.img)
 	do
-		mv ./payload/$d.img ./
-		erocheck=$($ebinner/gettype -i ./$d.img)
-		if [ "$erocheck" != "erofs" ];then
-		${su} python3 $binner/imgextractor.py $d.img ./
+		sf=$(echo "$d" | rev |cut -d'/' -f1  | rev | sed 's/.img//g')
+		yecho "检测&解包$sf.img..."
+		info=$($ebinner/gettype -i $d)
+		if [[ $sf = "vendor_boot" ]];then
+			mv $d ./ && i=$sf.img
+			imgextra
+			ysuc "成功." && rm -f $sf.img
+		elif [[ $info = "Unknow" ]] || [[ $info = "dtbo" ]] || [[ $info = "vbmeta" ]];then
+			ywarn "不支持自动解包！"
 		else
-		${su} $ebinner/erofsUnpackRust ./$d.img ./
-		mv ./config/* ./TI_config&&rm -fr ./config
+			mv $d ./ && i=$sf.img
+			imgextra
+			ysuc "成功." && rm -f $sf.img
 		fi
-		rm -rf $d.img
-	done
-	for m in $android_bootimg_partitons
-	do
-		i=$m.img
-		mv ./payload/$i ./
-		info=$($ebinner/gettype -i $i)
-		sf=$m
-		imgextra
-		rm -rf $i
 	done
 	
 else
 
 # 解压br文件
 if ls *.br >/dev/null 2>&1;then
-	ls *.new.dat.br | while read b; do
+	ls *.new.dat.br | while read i; do
 		sf=$(echo "$i" | rev |cut -d'.' -f1 --complement | rev | sed 's/.new.dat//g')
 		yecho "解包$sf..."
-		${su} $ebinner/brotli -d ${b} > /dev/null 2>&1
+		${su} $ebinner/brotli -d ${i} > /dev/null 2>&1
 		rm -rf $sf.new.dat.br
 		${su} python3 $binner/sdat2img.py ${sf}.transfer.list ${sf}.new.dat ./${sf}.img > /dev/null 2>&1
 		rm -rf ./${sf}.new.dat && rm -rf ./${sf}.patch.dat && rm -rf ./${sf}.transfer.list > /dev/null 2>&1
@@ -1317,14 +1310,13 @@ if ls *.br >/dev/null 2>&1;then
 		i=$sf.img
 		imgextra
 		rm -rf ./${sf}.img
-		echo 
 	done
 fi
 
 # 合并分段dat
 if ls *.dat.1 >/dev/null 2>&1;then
-	ls *.new.dat.1 | while read t; do
-		th=$(echo "$t" | cut -d"/" -f3| cut -d"." -f1)
+	ls *.new.dat.1 | while read i; do
+		th=$(echo "$i" | cut -d"/" -f3| cut -d"." -f1)
 		yecho "合并$th.new.dat..."
 		${su} cat ./${th}.new.dat.{1..999} >> ./${th}.new.dat
 		rm -rf ./${th}.new.dat.{1..999}
@@ -1333,8 +1325,8 @@ fi
 
 # 解压dat
 if ls *.dat >/dev/null 2>&1;then
-	ls *.new.dat | while read d; do
-		sf=$(echo "$d" | rev |cut -d'.' -f1 --complement | rev | sed 's/.new.dat//g' | sed 's/.new//g')
+	ls *.new.dat | while read i; do
+		sf=$(echo "$i" | rev |cut -d'.' -f1 --complement | rev | sed 's/.new.dat//g' | sed 's/.new//g')
 		yecho "解包$sf..."
 		${su} python3 $binner/sdat2img.py ${sf}.transfer.list ${sf}.new.dat ./${sf}.img > /dev/null 2>&1
 		rm -rf ./${sf}.new.dat && rm -rf ./${sf}.patch.dat && rm -rf ./${sf}.transfer.list > /dev/null 2>&1
@@ -1348,7 +1340,7 @@ fi
 if ls *.img >/dev/null 2>&1;then
 	ls *.img | while read i; do
 		info=$($ebinner/gettype -i $i)
-		sf=$(echo "$d" | rev |cut -d'.' -f1 --complement | rev )
+		sf=$(echo "$i" | rev |cut -d'.' -f1 --complement | rev )
 		yecho "解包$i..."
 		imgextra
 	done
@@ -1356,8 +1348,8 @@ fi
 
 # TWRP备份文件
 if ls *.win000 >/dev/null 2>&1;then
-	ls *.win000 | while read b; do
-		bh=$(echo "$b" | cut -d"/" -f3| cut -d"." -f1)
+	ls *.win000 | while read i; do
+		bh=$(echo "$i" | cut -d"/" -f3| cut -d"." -f1)
 		yecho "合并 $bh备份文件..."
 		${su} $ebinner/simg2img *${bh}.win* ./${bh}.win
 		rm -rf ./${bh}.win00{0..9}
@@ -1365,8 +1357,8 @@ if ls *.win000 >/dev/null 2>&1;then
 	done
 fi
 if ls *.win >/dev/null 2>&1;then
-	ls *.win | while read b; do
-		bh=$(echo "$b" | cut -d"/" -f3| cut -d"." -f1)
+	ls *.win | while read i; do
+		bh=$(echo "$i" | cut -d"/" -f3| cut -d"." -f1)
 		yecho "解压 $bh备份文件..."
 		${su} python3 $binner/imgextractor.py ./${bh}.win ./
 		rm -rf ./${bh}.win
@@ -1374,37 +1366,10 @@ if ls *.win >/dev/null 2>&1;then
 	done
 fi
 
-	read -p "请输入动态分区列表(空格隔开;可跳过): " dynamic_partitions
-	echo "dynamic_partitions=${dynamic_partitions}" >> TI_config/PROJECT_CONFIG.conf
-	read -p "请输入Super分区大小(字节数;可跳过): " super_partition_size
-	if test -z "$projec";then
-		super_partition_size=0
-	else  
-		echo "super_partition_size=$super_partition_size" >> TI_config/PROJECT_CONFIG.conf
-	fi
-	
 fi
 
 if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
 ${su} chmod 777 -R *
-fi
-
-if [[ -f $PROJECT_DIR/system/system/build.prop ]]; then
-	SYSTEM_DIR="$PROJECT_DIR/system/system"
-elif [[ -f $PROJECT_DIR/system/build.prop ]]; then
-	SYSTEM_DIR="$PROJECT_DIR/system"
-fi
-
-if [[ -d SYSTEM_DIR ]]; then
-echo "#SYSTEM_INFO" >> TI_config/PROJECT_CONFIG.conf
-ANDROID_VERSION=$(getprop "ro.build.version.release=")&&echo "ANDROID_VERSION=$ANDROID_VERSION" >> TI_config/PROJECT_CONFIG.conf
-MODEL=$(getprop "ro.product.mod_device")
-if ! grep -q "ro.product.mod_device" $SYSTEM_DIR/build.prop;then
-	MODEL=$(getprop "ro.product.model")
-fi
-echo "MODEL=$MODEL" >> TI_config/PROJECT_CONFIG.conf
-MIUI_VERSION=$(getprop "ro.miui.ui.version.code")&&echo "MIUI_VERSION=$MIUI_VERSION" >> TI_config/PROJECT_CONFIG.conf
-MIUI_DEV=$(getprop ro.system.build.version.incremental)&&echo "MIUI_DEV=$MIUI_DEV" >> TI_config/PROJECT_CONFIG.conf
 fi
 
 menu
