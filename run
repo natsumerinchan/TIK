@@ -397,7 +397,7 @@ elif [[ $op_pro =~ ^-?[1-9][0-9]*$ ]]; then
 			menu
 		else
 		#检验插件完整性
-		eval "sub=\$sub$subn"
+		eval "sub=\$sub$op_pro"
 		cd $PROJECT_DIR&&$binner/subs/$sub/run.sh
 		subbed
 		fi
