@@ -1,6 +1,6 @@
 #!/bin/bash
 LOCALDIR="$(cd $(dirname $0); pwd)"
-binner=$LOCALDIR/bin && source $binner/settings && show() { source $binner/show; }
+binner=$LOCALDIR/bin && source $binner/settings
 yecho(){ echo -e "\033[36m[`date '+%H:%M:%S'`]${1}\033[0m" ; }	#显示打印
 ywarn(){ echo -e "\033[31m${1}\033[0m" ; }	#显示打印
 ysuc(){ echo -e "\033[32m[`date '+%H:%M:%S'`]${1}\033[0m" ; }	#显示打印
@@ -43,6 +43,10 @@ function menu()
 {
 clear
 PROJECT_DIR=$LOCALDIR/$project && cd $PROJECT_DIR
+
+if [[ $userid = "root" ]]; then
+${su} chmod 777 -R *
+fi
 
 if [[ ! -d "TI_config" ]]; then
 ywarn "项目已损坏！" && menu
@@ -134,7 +138,7 @@ if [[ ! -f "$binner/depment" ]]; then
 	
 	if [[ $userid = "root" ]]; then
 		clear
-		ywarn "不建议在系统sudo下运行!"
+		ywarn "檢測系统sudo，將强制目錄賦滿權！"
 		sleep $sleeptime
 	fi
 	if [ "$platform" = "aarch64" ] && [[ ! -d "/sdcard/TIK" ]]; then
@@ -271,15 +275,41 @@ function unfilep()
 {
 clear
 cd $Sourcedir
-show
+
+
+echo -e " \033[31m >ROM列表 \033[0m\n"
+zipn=0
+ywarn "   请将ROM放于$Sourcedir下！"
+if ls -d $Sourcedir/*.zip >/dev/null 2>&1;then
+cd $Sourcedir
+	for zip0 in $(ls *.zip)
+	do 
+	if [ -f "$zip0" ]; then
+		zip=$(echo "$zip0" )
+		zipn=$((zipn+1))
+		echo -e "   [$zipn]- $zip\n"
+		eval "zip$zipn=$zip" 
+	fi
+	done
 cd $LOCALDIR
-if [ -f "$i0" ]; then
-	i=$(echo "$i0" | rev | cut -d"/" -f1 | rev)
-	clear
-	read -p "请输入项目名称(非中文,可留空)：" projec
+else
+ywarn "	没有ROM文件！"
+fi
+echo -e "-------------------------------------------------------\n"
+echo -e ""
+read -p "请输入对应序列号：" zipd
+if [[ $zipd =~ ^-?[1-9][0-9]*$ ]]; then
+if [ $zipd -gt $zipn ];then
+ywarn "输入有误！"
+sleep $sleeptime && promenu
+
+else
+
+eval "zip=\$zip$zipd"
+zs=$(echo "$zip" | rev | cut -d'.' -f1 --complement | rev)
+	read -p "请输入项目名称(可留空)：" projec
 	if test -z "$projec";then
-		sf=$(echo "$i0" | rev | cut -d"/" -f1| cut -d'.' -f1 --complement | rev)
-		project=TI_$sf
+		project=TI_$zs
 	else  
 		project=TI_$projec
 	fi
@@ -288,26 +318,29 @@ if [ -f "$i0" ]; then
 		ywarn "项目已存在！自动命名为：$project"
 	fi
 	PROJECT_DIR=$LOCALDIR/$project && mkdir $PROJECT_DIR
-	echo 创建项目:$project成功！
-	if [[ ! -f $LOCALDIR/$i ]]; then
-		yecho "移动$i0到工具目录..."
-		${su} mv $i0 $LOCALDIR
-	fi
-	cd $PROJECT_DIR
-	#万能解包
-	type1=$(echo "$i" | rev | cut -d"/" -f1| cut -d'.' -f1 | rev)
-	info=$($ebinner/gettype -i $i0)
-	if [ "$type1" == "zip" ];then
-		yecho "解压刷机包中..."
-		7z x "$LOCALDIR/$i" -o"$LOCALDIR/$project/" > /dev/null
-		sleep $sleeptime
-		autounpack
-	else
-		mv $i0 $PROJECT_DIR&&inunpack
-	fi
-else
-	promenu
+	echo 创建项目:$project 成功！
+	yecho "解压刷机包中..."
+	7z x "$Sourcedir/$zip" -o"$LOCALDIR/$project/" > /dev/null
+	sleep $sleeptime
+	autounpack
+
+
+
+
+
+sleep $sleeptime
 fi
+else
+ywarn "输入有误！！" && promenu
+sleep $sleeptime
+fi
+
+
+
+
+
+
+
 }
 
 # 新建项目
@@ -379,8 +412,16 @@ read -p "请输入序号：" op_pro
 if [ "$op_pro" == "n" ]; then
 	subber
 elif [ "$op_pro" == "d" ]; then
-	read -p "请输入你要删除的插件序号：" sub
-	eval "sub=\$sub$subn"
+	read -p "请输入你要删除的插件序号：" op_pro
+	for key in ${!mysubs[@]}
+	do
+		if [ "$key" == "$op_pro" ]; then
+			sub=${mysubs[$key]}
+			break
+		fi
+	done
+	op_pro=""
+	eval "sub=\$sub"
 	#再次确认
 	read -p "在回车之前，您可以ctrl+c中断删除" null
 	rm -fr $sub
@@ -396,9 +437,18 @@ elif [[ $op_pro =~ ^-?[1-9][0-9]*$ ]]; then
 			sleep $sleeptime
 			menu
 		else
+		for key in ${!mysubs[@]}
+		do
+			if [ "$key" == "$op_pro" ]; then
+				sub=${mysubs[$key]}
+				break
+			fi
+		done
+		op_pro=""
 		#检验插件完整性
-		eval "sub=\$sub$op_pro"
-		cd $PROJECT_DIR&&$binner/subs/$sub/run.sh
+		eval "sub=\$sub"
+		cd $PROJECT_DIR && sh $binner/subs/$sub/run.sh
+		sleep $sleeptime
 		subbed
 		fi
 	else
@@ -417,20 +467,51 @@ function subber()
 {
 clear
 cd $LOCALDIR
-exit0=0
-show
-if [ "$exit0" == "1" ]; then
-	subbed
+echo -e " \033[31m >插件列表 \033[0m\n"
+zipn=0
+ywarn "   请将插件放于$Sourcedir下！"
+if ls -d $Sourcedir/*.zip >/dev/null 2>&1;then
+cd $Sourcedir
+	for zip0 in $(ls *.zip)
+	do 
+	if [ -f "$zip0" ]; then
+		zip=$(echo "$zip0" )
+		zipn=$((zipn+1))
+		echo -e "   [$zipn]- $zip\n"
+		eval "zip$zipn=$zip" 
+	fi
+	done
+cd $LOCALDIR
 else
-	zs=$(echo "$i0" | rev | cut -d"/" -f1| cut -d'.' -f1 --complement | rev)
-	mkdir $binner/subs/$zs
-	yecho "安装插件[$zs]中..."
-	7z x "$i0" -o"$binner/subs/$zs" > /dev/null
-	${su} chmod -R 777 $binner/subs/$zs
-	echo "安装完成"
-	sleep $sleeptime
-	subbed
+ywarn "	没有插件文件！"
 fi
+echo -e "-------------------------------------------------------\n"
+echo -e ""
+read -p "请输入对应序列号：" zipd
+if [[ $zipd =~ ^-?[1-9][0-9]*$ ]]; then
+if [ $zipd -gt $zipn ];then
+ywarn "输入有误！"
+sleep $sleeptime
+
+else
+
+eval "zip=\$zip$zipd"
+zs=$(echo "$zip" | rev | cut -d'.' -f1 --complement | rev)
+if [[ -d $binner/subs/$zs ]]; then
+${su} rm -fr $binner/subs/$zs
+fi
+mkdir $binner/subs/$zs
+yecho "安装插件[$zs]中..."
+7z x "$Sourcedir/$zip" -o"$binner/subs/$zs" > /dev/null
+${su} chmod -R 777 $binner/subs/$zs
+ysuc "安装完成"
+sleep $sleeptime
+fi
+else
+ywarn "输入有误！！"
+sleep $sleeptime
+fi
+subbed
 }
 
 
@@ -824,19 +905,14 @@ inpacker(){
 	#分区大小处理
 	size0=$(cat $PROJECT_DIR/TI_config/${name}_size.txt)
 	zj=`du -sb $name | awk {'print $1'}`
-	if [ $zj -gt 10000000 ] ; then
+	if [ $zj -gt 50000000 ] ; then
 		img_size0=`echo "$zj * 1.0758" |bc`
 	else
-		img_size0=`echo "$zj * 1.2" |bc`  
+		img_size0=`echo "$zj + 136314880" |bc`  
 	fi
 	img_size=`echo $img_size0 | sed 's/\..*//g'`
-	size=`echo "$img_size0 / $BLOCKSIZE" |bc` && addsize=`echo $size - $size0`
-	read -p "是否增加size$addsize,以防打包失败？[1/0]" sizecheck
-	if [ "$sizecheck" = "1" ];then
-		echo $img_size >$PROJECT_DIR/TI_config/${name}_size.txt
-	else
-		size=$size0
-	fi
+	size=`echo "$img_size0 / $BLOCKSIZE" |bc`
+	echo $img_size >$PROJECT_DIR/TI_config/${name}_size.txt
 	if [[ -f "dynamic_partitions_op_list" ]]; then
 	sed -i "s/resize ${name}\s.*/resize ${name} $img_size/" $PROJECT_DIR/dynamic_partitions_op_list
 	fi
@@ -896,7 +972,7 @@ for dtbo_files in $dtbo_files_name ;do
   [ $? != 0 ] && ywarn "反编译$dtbo_files失败" && unpmenu
 done
 ysuc "解压完成!"
-if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
+if [[ $userid = "root" ]]; then
 	chmod 777 -R $dtbodir
 fi
 unpmenu
@@ -930,7 +1006,7 @@ yecho "正在生成dtbo.img..."
 $mkdtimg_tool $dtbodir/new_dtbo_files/* create "$PROJECT_DIR/TI_out/dtbo.img" --page_size="4096" "$dtbodir/dtbo_files/$dtbo_files"
 if [ $? = 0 ];then
   ysuc "生成完毕!"
-if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
+if [[ $userid = "root" ]]; then
 	chmod 777 -R $dtbodir
 fi
 else
@@ -978,7 +1054,7 @@ elif [ "$info" = "super" ];then
 	else
 		ysuc "super输出至 $TARGETDIR"
 	fi
-if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
+if [[ $userid = "root" ]]; then
 	chmod 777 -R $TARGETDIR
 fi
 	elif [ "$info" = "ext" ]; then
@@ -999,7 +1075,7 @@ elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] |
 	if [ $? != "0" ];then
 		ywarn "解压失败"
 	fi
-if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
+if [[ $userid = "root" ]]; then
 	${su} chmod 777 -R ./$sf
 fi
 else
@@ -1052,7 +1128,7 @@ $dtc -@ -I "dtb" -O "dts" "./dtb" -o "$dtbdir/dts_files/dts" > /dev/null 2>&1
 [ $? != 0 ] && ywarn "反编译dtb失败" && unpmenu
 ysuc "反编译完成!"
 sleep $sleeptime
-if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
+if [[ $userid = "root" ]]; then
 	chmod 777 -R $dtbdir
 fi
 unpmenu
@@ -1080,98 +1156,10 @@ done
 find $dtbdir/new_dtb_files -name "dtb*" -exec cat {} > $PROJECT_DIR/TI_out/dtb \;
 ysuc "回编译完成！"
 sleep $sleeptime
-if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
+if [[ $userid = "root" ]]; then
 	chmod 777 -R $dtbdir
 fi
 packmenu
-}
-
-
-function vabpack()
-{
-pro=0
-if ls *.zip >/dev/null 2>&1;then
-	for pros in $(ls -d *.zip)
-	do 
-	if [ -d "./$pros" ];then
-		pro=$((pro+1))
-		echo -e "   [$pro]  $pros\n"
-		eval "pro$pro=$pros" 
-	fi
-	done
-else
-	clear
-	ywarn "请把卡刷包文件放置在工作目录后重试！"
-	sleep $sleeptime
-	menu
-fi
-echo 
-read -p "  请输入序号：" op_pro
-if [[ $op_pro =~ ^-?[1-9][0-9]*$ ]]; then
-	if ls *.zip >/dev/null 2>&1;then
-		if [ $op_pro -gt $pro ];then
-			ywarn "  请输入正确编号!"
-			sleep $sleeptime
-			menu
-		else
-			eval "zip=\$pro$op_pro"
-			7z x "$zip" > /dev/null
-			rm -rf *.pb *.txt META-INF >/dev/null 2>&1
-			if [[ -f "payload.bin" ]]; then
-				$ebinner/payload-dumper-go ./payload.bin -o ./payload
-				cd payload
-				echo "@echo off">TIK_flash_all.bat
-				echo "cd %~dp0">>TIK_flash_all.bat
-				echo >>TIK_flash_all.bat
-
-				ls | grep "\.img" | grep -v "^odm\.img" | grep -v "^product\.img" | grep -v "^vendor\.img" | grep -v "^vendor_dlkm\.img" | grep -v "^system\.img" | grep -v "^system_ext\.img" | while read i; do
-					line=$(echo "$i" | cut -d"." -f1)
-					echo "FlashImageTools\fastboot %* flash $line"_ab" images\\$line.img">>TIK_flash_all.bat
-				done
-
-				echo "FlashImageTools\fastboot reboot fastboot">>TIK_flash_all.bat
-
-				for partition in ${partitions}; do
-					if [[ -f ${partition}.img ]]; then
-						echo >>TIK_flash_all.bat
-						echo "FlashImageTools\fastboot %* flash ${partition}"_a" images\\${partition}.img">>TIK_flash_all.bat
-					fi
-				done
-
-				echo >>TIK_flash_all.bat
-				echo "FlashImageTools\fastboot %* erase metadata">>TIK_flash_all.bat
-				echo "FlashImageTools\fastboot %* erase userdata">>TIK_flash_all.bat
-				echo "FlashImageTools\fastboot %* set_active a">>TIK_flash_all.bat
-				echo "FlashImageTools\fastboot %* reboot">>TIK_flash_all.bat
-				echo "pause">>TIK_flash_all.bat
-				echo >>TIK_flash_all.bat
-				cat TIK_flash_all.bat |sed -e '/erase/d' $i>TIK_flash_all_except_storage.bat
-				cp -r $binner/FlashImageTools ./FlashImageTools >/dev/null 2>&1
-				date=$(date +%y%m%d%H%M)
-				zip -q -r VABFlashRom_$date.zip *
-				mv VABFlashRom_$date.zip $LOCALDIR
-				cd ..
-				rm -rf payload >/dev/null 2>&1
-				ywarn "完成!"
-				sleep $sleeptime
-				menu
-			else
-				ywarn "非VAB刷机包!"
-				sleep $sleeptime
-				menu
-			fi
-		fi
-	else
-		ywarn "  请输入正确编号!"
-		sleep $sleeptime
-		menu
-	fi
-else
-	ywarn "  请输入正确编号!"
-	sleep $sleeptime
-	menu
-fi
-
 }
 
 function packsuper()
@@ -1259,7 +1247,7 @@ function inunpack()
 	else
 		ywarn "未知格式！"
 	fi
-if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
+if [[ $userid = "root" ]]; then
 	${su} chmod 777 -R $sf > /dev/null 2>&1
 fi
 }
@@ -1268,6 +1256,7 @@ fi
 # 自动解压
 function autounpack()
 {
+cd $PROJECT_DIR
 mkdir TI_config
 yecho "自动解包阶段开始，将自动删除源文件！"
 # payload.bin解包
@@ -1276,7 +1265,7 @@ if [ -f "./payload.bin" ]; then
 	$ebinner/payload-dumper-go ./payload.bin -o ./payload
 	yecho "payload.bin解包完成！"
 	sleep $sleeptime
-	rm -rf payload.bin && rm -rf care_map.pb && rm -rf payload_properties.txt
+	rm -rf payload.bin && rm -rf care_map.pb && rm -rf apex_info.pb&& rm -rf payload_properties.txt
 	for d in $(ls payload/*.img)
 	do
 		sf=$(echo "$d" | rev |cut -d'/' -f1  | rev | sed 's/.img//g')
@@ -1368,7 +1357,7 @@ fi
 
 fi
 
-if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
+if [[ $userid = "root" ]]; then
 ${su} chmod 777 -R *
 fi
 
@@ -1382,7 +1371,7 @@ function insuper()
 Imgdir=$1
 Supername=$2
 group_size=0
-if [ "$platform" != "aarch64" ] && [[ $userid = "root" ]]; then
+if [[ $userid = "root" ]]; then
 ${su} chmod -R 777 $Imgdir
 fi
 
