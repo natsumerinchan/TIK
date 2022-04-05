@@ -1,16 +1,11 @@
 
-#  **TI Kitchen** 
-
-开发者yeliqin666失去测试设备与开发条件，将退出工具开发，将由其他大佬接管
-
-
 请关注工具主页更新提醒！
 ####  **介绍** 
 
 
 1.  【 **TI Kitchen** 】 永久开源的ROM工具箱，支持安卓全版本
 
-2.  支持【 *.zip, *.br, super ,*.dat, *.dat.1~20, ext4/2 *.img, payload.bin, *.win000-004 ，*.ops，dtbo，dtb，*.ofp,*.ozip】格式分解
+2.  支持【 *.zip, *.br, *.dat,super，dtbo，dtb，*.dat.1~20, ext4/2 *.img, payload.bin, *.win000-004 等】解包与打包，*.ozip, *.ops, *.ofp,暂只支持解包
 
 3.  支持安卓全版本解包/打包【包括动态分区】，使用[ mke2fs+e2fsdroid ]
 
@@ -22,7 +17,7 @@
 	
 7.  支持分解TWRP备份文件（data除外），最大支持4个( _*.win000~004_ )
 
-8.  支持分解绿厂的ops,ofp(ozip已被弃用)等
+8.  支持分解绿厂的ops,ofp,ozip等
 
 9.  加入AIK(Android-Image-Kitchen)分解合成[boot|exaid|recovery/etc].img, 已经补全手机端支持
 
@@ -37,7 +32,7 @@
 
 2. 电脑 Win10 Wsl/Wsl2 Ubuntu 20.04及以上版本 x86_64[x64]  推荐wsl1!
 
-3. 虚拟机或实体机 Ubuntu 20.04及以上版本 x86_64[x64]  不推荐deepin等，兼容性差！
+3. 虚拟机或实体机 Ubuntu 20.04及以上版本 x86_64[x64] 
 
 
 ####  **安装教程** 
@@ -102,7 +97,8 @@ Credit:
 21. pack_payload.bin tools on x64_64 [from @秋水](Email：qiurigao@163.com)
 22. show.bash_with-dialog(modified by @yeliqin666) [CSDN]
 23. D.N.A. & CYToolkit for reference on UI [@sharpeter ](https://gitee.com/sharpeter/DNA) [@闲出屁的imagine](https://github.com/NightstarSakura)
-24. debuging & suggestions [the active users!]
+24. gettype @affggh
+25. debuging & suggestions &PR [the active users!]
 
 
 ####  **交流反馈** 

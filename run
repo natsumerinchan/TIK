@@ -10,7 +10,7 @@ tikver=$(cat $binner/version)
 if [[ $(uname -m) != "aarch64" ]]; then su="sudo ";fi;
 
 function timeout() {
-waitsec=2
+waitsec=10
 ( $* ) & pid=$!
 ( sleep $waitsec && kill -HUP $pid ) 2>/dev/null & watchdog=$!
 if wait $pid 2>/dev/null; then
@@ -406,12 +406,12 @@ do
 	fi
 done
 echo -e "----------------------------------------------\n"
-echo -e "\033[33m> [n]- 安装  [d]- 删除  [e]- 项目菜单\033[0m"
+echo -e "\033[33m> [44]- 安装  [55]- 删除  [66]- 项目菜单\033[0m"
 echo -e ""
 read -p "请输入序号：" op_pro
-if [ "$op_pro" == "n" ]; then
+if [ "$op_pro" == "44" ]; then
 	subber
-elif [ "$op_pro" == "d" ]; then
+elif [ "$op_pro" == "55" ]; then
 	read -p "请输入你要删除的插件序号：" op_pro
 	for key in ${!mysubs[@]}
 	do
@@ -428,7 +428,7 @@ elif [ "$op_pro" == "d" ]; then
 	ysuc "删除成功！"
 	sleep $sleeptime
 	subbed
-elif [ "$op_pro" == "e" ]; then
+elif [ "$op_pro" == "66" ]; then
 	menu
 elif [[ $op_pro =~ ^-?[1-9][0-9]*$ ]]; then
 	if ls >/dev/null 2>&1;then
@@ -635,7 +635,7 @@ read -p "请选择类型：" typr
 		ywarn "默认选择开发版内测！"
 		sleep $sleeptime
 	esac
-link=0 && link=$(python3 $binner/get_miui.py $region $model $version $type)
+link=0 && link=$(timeout python3 $binner/get_miui.py $region $model $version $type)
 if echo $link | grep "http" > /dev/null 2>&1 ; then
 	echo $link
 	read -p "是否开始下载？[1/0]：" ver
@@ -847,10 +847,10 @@ if [[ ! -d "TI_out" ]]; then
 	mkdir $PROJECT_DIR/TI_out
 fi
 
-if ls ./TI_config/*.info >/dev/null;then
-	read -p "是否打包所有启动镜像？ [1/0]	" pacall
-	ls ./TI_config/*.info | while read i; do
-	sf=$(echo "$i" | cut -d"/" -f3 | cut -d'.' -f1 )
+if ls ./TI_config/*.info >/dev/null 2>&1;then	
+read -p "是否打包所有启动镜像？ [1/0]	" pacall
+	ls TI_config/*.info | while read i; do
+	sf=$(echo "$i" | cut -d"/" -f2 | cut -d'.' -f1 )
 	rm -rf $AIK/split_img && rm -rf $AIK/ramdisk && rm -rf $AIK/*.img
 	if [ -e $AIK/ramdisk-new.cpio.gz ]; then
 		rm -rf $AIK/ramdisk-new.cpio.gz
@@ -871,8 +871,8 @@ if ls ./TI_config/*_fs_config >/dev/null 2>&1;then
 	
 	read -p "打包文件系统: [1]ext4 [2]erofs+lz4hc [3]erofs+lz4  [4]erofs	" syscheck
 	
-	ls ./TI_config/*_fs_config | while read i; do
-	sf=$(echo "$i" | cut -d"/" -f3 | sed 's/_fs_config//g')
+	ls TI_config/*_fs_config | while read i; do
+	sf=$(echo "$i" | cut -d"/" -f2 | sed 's/_fs_config//g')
 	if [ "$pacall" = "1" ];then
 		yecho "打包 $sf"
 		rm -f ${sf}.img > /dev/null
