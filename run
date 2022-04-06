@@ -1,4 +1,11 @@
 #!/bin/bash
+
+# Add by affggh for windows
+if [ $(uname -o)=="Cygwin" ]; then
+  WINPLATFORM=true
+  cd $(pwd)
+fi
+
 LOCALDIR="$(cd $(dirname $0); pwd)"
 binner=$LOCALDIR/bin && source $binner/settings
 yecho(){ echo -e "\033[36m[`date '+%H:%M:%S'`]${1}\033[0m" ; }	#显示打印
@@ -7,20 +14,18 @@ ysuc(){ echo -e "\033[32m[`date '+%H:%M:%S'`]${1}\033[0m" ; }	#显示打印
 getprop() { grep "$1" "${SYSTEM_DIR}/build.prop" | cut -d "=" -f 2; } #读取机型配置
 getconfig() { grep "$1" "${PROJECT_DIR}/TI_config/project_config" | cut -d "=" -f 2; } #读取项目信息
 tikver=$(cat $binner/version)
+
 if [[ $(uname -m) != "aarch64" ]]; then su="sudo ";fi;
-
-function timeout() {
-waitsec=10
-( $* ) & pid=$!
-( sleep $waitsec && kill -HUP $pid ) 2>/dev/null & watchdog=$!
-if wait $pid 2>/dev/null; then
-    pkill -HUP -P $watchdog
-    wait $watchdog
+if [ WINPLATFORM ]; then
+  unset su
 fi
-}
 
 
-HOST=$(uname) && platform=$(uname -m) && AIK="$binner/AIK"
+
+# Edit by affggh
+$WINPLATFORM && HOST="Win" || HOST="$(uname)"
+$WINPLATFORM && platform="x86_64" || platform=$(uname -m)
+AIK="$binner/AIK"
 partitions="
 system
 vendor
@@ -145,6 +150,8 @@ if [[ ! -f "$binner/depment" ]]; then
 		mkdir /sdcard/TIK
 	fi
 	
+	# Add by affggh
+	if [ ! $WINPLATFORM ]; then
 	yecho "开始配置环境..."
 	sleep $sleeptime
 	yecho "更换清华源..."
@@ -160,6 +167,7 @@ if [[ ! -f "$binner/depment" ]]; then
 		yecho "安装$i..."
 		${su} apt-get install $i -y
 	done
+fi
 	${su} apt --fix-broken install
 	${su} apt update --fix-missing
 	pip3 install --upgrade pip -i $PIP_MIRROR
@@ -170,8 +178,7 @@ if [[ ! -f "$binner/depment" ]]; then
 	pip3 install --ignore-installed pyyaml -i $PIP_MIRROR
 	touch $binner/depment
 fi
-
-content=$(timeout curl -s https://v1.jinrishici.com/all.json)
+content=$(curl -s https://v1.jinrishici.com/all.json)
 shiju=$(echo $content| cut -d \" -f 4 )
 from=$(echo $content| cut -d \" -f 8)
 author=$(echo $content| cut -d \" -f 12)
@@ -186,7 +193,7 @@ cd $LOCALDIR
 echo -e "\033[31m $(cat $binner/banner) \033[0m"
 echo 
 
-updatev=$(timeout curl -s https://gitee.com/yeliqin666/TIK/raw/master/bin/version)
+updatev=$(curl -s https://gitee.com/yeliqin666/TIK/raw/master/bin/version)
 if [ $updatev -gt $tikver ];then
 	ywarn "检测到更新：【$updatev】"
 else
@@ -635,7 +642,7 @@ read -p "请选择类型：" typr
 		ywarn "默认选择开发版内测！"
 		sleep $sleeptime
 	esac
-link=0 && link=$(timeout python3 $binner/get_miui.py $region $model $version $type)
+link=0 && link=$(python3 $binner/get_miui.py $region $model $version $type)
 if echo $link | grep "http" > /dev/null 2>&1 ; then
 	echo $link
 	read -p "是否开始下载？[1/0]：" ver
@@ -1021,7 +1028,11 @@ bootpac()
 {
 sf=${1}
 cp -afrv $PROJECT_DIR/$sf/* $AIK > /dev/null
+if [ WINPLATFORM ]; then
+$AIK/repackimg.bat --forceelf > /dev/null
+else
 $AIK/repackimg.sh --forceelf > /dev/null
+fi
 if [ -e $AIK/unpadded-new.img ];then
   mv $AIK/unpadded-new.img $PROJECT_DIR/exaid/
 fi
@@ -1070,7 +1081,11 @@ fi
 	fi
 elif [ "$info" = "boot" ] || [ "$sf" == "boot" ] || [ "$sf" == "vendor_boot" ] || [ "$sf" == "recovery" ] ; then
 	${su} mkdir $sf
+if [ WINPLATFORM ]; then
+	${su} $AIK/unpackimg.bat $PROJECT_DIR/$i ./ 
+else
 	${su} $AIK/unpackimg.sh $PROJECT_DIR/$i ./ >> $PROJECT_DIR/TI_config/$sf.info
+fi
 	${su} mv $AIK/ramdisk $PROJECT_DIR/$sf && ${su} mv $AIK/split_img $PROJECT_DIR/$sf
 	if [ $? != "0" ];then
 		ywarn "解压失败"
@@ -1082,6 +1097,7 @@ else
 	ywarn "未知格式！请附带文件提交issue!"
 	sleep $sleeptime
 fi
+sleep 10
 }
 
 function unsuper2()

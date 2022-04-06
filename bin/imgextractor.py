@@ -43,6 +43,23 @@ class Extractor(object):
         self.context = []
         self.fsconfig = []
 
+    # Modified by affggh for cygwin port
+    def __symlink(self, target, file):
+        # 创建一个cygwin可以读取的软连接
+        f = open(file, "wb")
+        magic = b'!<symlink>'
+        for i in magic:
+            s = struct.pack('B', i)
+            f.write(s)
+        f.write(b'\xff\xfe')
+        for i in bytes(target, encoding="ASCII"):
+            s = struct.pack('B', i)
+            f.write(s)
+            f.write(b'\x00')
+        f.write(b'\x00\x00')
+        f.close()
+        win32api.SetFileAttributes(file, win32con.FILE_ATTRIBUTE_SYSTEM) # 设置sys属性
+
     def __remove(self, path):
         if os.path.isfile(path):
             os.remove(path)  # remove the file
@@ -128,7 +145,11 @@ class Extractor(object):
                         os.makedirs(dir_target)
                     if os.name == 'posix':
                         os.chmod(dir_target, int(mode, 8))
-                        os.chown(dir_target, uid, gid)
+                        # Modified by affggh for tik cygwin port
+                        if not os.getenv("OS") == 'Windows_NT':
+                            os.chown(dir_target, uid, gid)
+                        else:
+                            pass
                     scan_dir(entry_inode, entry_inode_path)
                     if cap == '' and con == '':
                         tmppath=self.DIR + entry_inode_path
@@ -212,7 +233,11 @@ class Extractor(object):
                         with open(file_target, 'wb') as out:
                             out.write(raw)
                         os.chmod(file_target, int(mode, 8))
-                        os.chown(file_target, uid, gid)
+                        # Modified by affggh for tik cygwin port
+                        if not os.getenv("OS") == 'Windows_NT':
+                            os.chown(dir_target, uid, gid)
+                        else:
+                            pass
                     if cap == '' and con == '':
                         tmppath=self.DIR + entry_inode_path
                         if (tmppath).find(' ',1,len(tmppath))>0:
