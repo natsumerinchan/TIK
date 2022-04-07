@@ -1,8 +1,14 @@
 #!/bin/bash
 
 # Add by affggh for windows
-if [ $(uname -o)=="Cygwin" ]; then
+HOST="$(uname)"
+platform=$(uname -m)
+if [[ $(uname -m) != "aarch64" ]]; then su="sudo ";fi;
+if [ $(uname -o) == "Cygwin" ]; then
   WINPLATFORM=true
+  HOST="Win"
+  platform="x86_64" 
+  unset su
   cd $(pwd)
 fi
 
@@ -15,16 +21,8 @@ getprop() { grep "$1" "${SYSTEM_DIR}/build.prop" | cut -d "=" -f 2; } #读取机
 getconfig() { grep "$1" "${PROJECT_DIR}/TI_config/project_config" | cut -d "=" -f 2; } #读取项目信息
 tikver=$(cat $binner/version)
 
-if [[ $(uname -m) != "aarch64" ]]; then su="sudo ";fi;
-if [ WINPLATFORM ]; then
-  unset su
-fi
-
-
 
 # Edit by affggh
-$WINPLATFORM && HOST="Win" || HOST="$(uname)"
-$WINPLATFORM && platform="x86_64" || platform=$(uname -m)
 AIK="$binner/AIK"
 partitions="
 system
@@ -167,9 +165,9 @@ if [[ ! -f "$binner/depment" ]]; then
 		yecho "安装$i..."
 		${su} apt-get install $i -y
 	done
-fi
 	${su} apt --fix-broken install
 	${su} apt update --fix-missing
+fi
 	pip3 install --upgrade pip -i $PIP_MIRROR
 	pip3 install pycryptodome -i $PIP_MIRROR
 	pip3 install docopt -i $PIP_MIRROR
