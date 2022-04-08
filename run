@@ -1067,7 +1067,7 @@ if [[ $userid = "root" ]]; then
 	chmod 777 -R $TARGETDIR
 fi
 	elif [ "$info" = "ext" ]; then
-		${su} python3 $binner/imgextractor.py $PROJECT_DIR/$sf.img ./ > /dev/null
+		${su} python3 $ebinner/imgextractor.py $PROJECT_DIR/$sf.img ./ > /dev/null
 	if [ $? != "0" ];then
 		ywarn "解压失败"
 	fi
@@ -1251,9 +1251,9 @@ function inunpack()
 		fi
 	elif [ "$type1" = "win000" ];then
 		${su} $ebinner/simg2img *${sf}.win* ./${sf}.win
-		${su} python3 $binner/imgextractor.py ./${sf}.win ./
+		${su} python3 $ebinner/imgextractor.py ./${sf}.win ./
 	elif [ "$type1" = "win" ];then
-		${su} python3 $binner/imgextractor.py ./${sf}.win ./
+		${su} python3 $ebinner/imgextractor.py ./${sf}.win ./
 	elif [ "$type1" = "dat.1" ];then
 		${su} cat ./${sf}.new.dat.{1..999} >> ./${sf}.new.dat
 		python3 $binner/sdat2img.py $sf.transfer.list $sf.new.dat ./$sf.img
@@ -1363,7 +1363,7 @@ if ls *.win >/dev/null 2>&1;then
 	ls *.win | while read i; do
 		bh=$(echo "$i" | cut -d"/" -f3| cut -d"." -f1)
 		yecho "解压 $bh备份文件..."
-		${su} python3 $binner/imgextractor.py ./${bh}.win ./
+		${su} python3 $ebinner/imgextractor.py ./${bh}.win ./
 		rm -rf ./${bh}.win
 		sleep $sleeptime
 	done
